@@ -1,0 +1,39 @@
+# RNAseq data analysis
+
+## Data pre-processing
+
+To start, create a new R project:
+
+1. File > New Project
+2. 
+
+The data considered for the RNAseq part of the course have been downloaded from 
+ArrayExpress (http://www.ebi.ac.uk/arrayexpress) and correspond to 8 RNA 
+sequencing libraries from Human brain and liver.
+
+Raw sequencing data are usually available in FASTQ format, which is a well 
+defined text-based format for storing both biological sequences (usually nucleotide
+sequences) and their corresponding quality scores. The raw data from this study 
+have been downloaded (8Gb / fastq file) into the shared directory 
+`../data/Data_Analysis_with_R/RNAseq/raw_data`.
+
+To see a list of files in this directory, enter the following commands:
+
+```{r,eval=F}
+RNASeq_DATA_DIR <- "../data/Data_Analysis_with_R/RNAseq/raw_data"
+dir(RNASeq_DATA_DIR)
+```
+
+The first step in a RNAseq analysis is to run a quick quality check on your data, 
+this will give you an idea of the quality of your raw data in terms of number of 
+reads per library, read length, average quality score along the reads, GC content, 
+sequence duplication level, adaptors that might have not been removed correctly from the data etc.
+
+The `fastQC` tool is quick and easy to run and can be downloaded from here: http://www.bioinformatics.babraham.ac.uk/projects/fastqc/.
+
+To ensure highest quality of the sequences for subsequent mapping and 
+differential expression analysis steps, the reads can also be trimmed using 
+the `Trimmomatic` tool (Lohse et al. 2012).
+
+NOTE: For the scope of this course we will focus on the R-based steps and 
+will assume that the data are fit for purpose.

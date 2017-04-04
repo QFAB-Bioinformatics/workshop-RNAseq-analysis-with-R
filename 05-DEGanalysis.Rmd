@@ -1,0 +1,140 @@
+## Differential expression analysis
+
+**BIOLOGICAL QUESTION**
+What are the list of genes differentially expressed between the `liver` and the `brain`
+samples?
+
+Before proceeding with differential expression analysis, it is useful to filter 
+out very lowly expressed genes. This will help increasing the statistical power 
+of the analysis while keeping genes of interest. A common way to do this is by 
+filtering out genes having less than 1 count-per-million reads (cpm) in half the samples. 
+
+The `edgeR` library provides the `cpm` function which can be used here.
+
+```{r}
+library(edgeR)
+
+raw.counts <- counts$counts
+dim(raw.counts)
+```
+
+```{r}
+raw.counts[1:5,1:3]
+```
+
+```{r}
+isexpr <- rowSums(cpm(raw.counts)> 1) >= 4
+table(isexpr)
+```
+
+```{r}
+filtered.raw.counts <- raw.counts[isexpr,]
+genes <- rownames(filtered.raw.counts)
+dim(filtered.raw.counts)
+```
+
+The `limma` package (since version 3.16.0) offers the `voom` function that will 
+normalise read counts and apply a linear model to the normalised data before
+computing moderated t-statistics of differential expression.
+
+```{r}
+library(limma)
+
+## check sample groupings
+design[colnames(filtered.raw.counts),]$tissue == group
+```
+
+Limma requires a design matrix to be created to:
+```{r}
+design <- model.matrix(~0+group)
+
+colnames(design) <- gsub('group', '', colnames(design))
+
+design
+```
+
+`calcNormFactors` - Calculate normalization factors to scale the raw library sizes.
+
+```{r}
+#nf <- calcNormFactors(filtered.raw.counts)
+#y <- voom(filtered.raw.counts, design, lib.size=colSums(filtered.raw.counts)*nf)
+
+dge <- DGEList(filtered.raw.counts)
+dge <- calcNormFactors(dge)
+y <- voom(dge,design)
+norm.expr <- y$E
+write.table(norm.expr, file="normalised_expr.txt", row.names=T, quote=F, sep="\t")
+```
+
+Fitting the model:
+```{r}
+fit <- lmFit(y,design)
+
+cont.matrix <- makeContrasts(liver-brain, levels=design)
+cont.matrix
+```
+
+```{r}
+fit2 <- constrasts.fit(fit, cont.matrix)
+
+fit2 <- eBayes(fit2)
+options(digits = 3)
+
+dim(fit2)
+```
+
+
+The `topTable` function summarises the output from limma in a table format. 
+Significant DE genes for a particular comparison can be identified by selecting 
+genes with a p-value smaller than a chosen cut-off value and/or a fold change 
+greater than a chosen value in this table. By default the table will be sorted
+by increasing adjusted p-value, showing the most significant DE genes at the top.
+
+Set the threshold values:
+```{r}
+THRES_PVAL <- 0.01
+THRES_FC <- 3
+
+colnames(fit$coefficients)
+```
+
+Get the output table for the 10 most significant DE genes for this comparison: 
+$liver vs brain$.
+```{r}
+comparison <- 'liver - brain'
+topTable(fit2, coef=comparison)
+```
+
+Get the full table (`n` is the number of genes in the fit):
+```{r}
+limma.result <- topTable(fit2, coef=comparison, n=nrow(fit2))
+
+## Get significant DEGs only (adjusted p-value < THRES_PVAL)
+limma.sigP.DEG <- topTable(fit2, coef=comparison, n=nrow(fit2), p.val=THRES_PVAL)
+dim(limma.sigP.DEG)
+```
+
+Get significant DEG with low adjusted p-values and high fold change
+```{r}
+limma.sigFC.DEG <- subset(limma.sigP.DEG, logFC > THRES_FC)
+dim(limma.sigFC.DEG)
+```
+
+Write the limma output table for significant genes to a tab-delimited file:
+```{r}
+filename <- paste0("DEG_",comparison,"_pval_",THRES_PVAL, "_logFC_", THRES_FC, ".txt");
+write.table(limma.sigFC.DEG, file=filename, row.names=T, quote=F, sep="\t")
+```
+
+```{block, type='rmdexercise'}
+Get the number of DE genes between technical group 1 and technical group 2 (all Brain samples) with adj pvalue<0.01}
+* Create a new design matrix for limma with the technical replicate groups
+* Re-normalise the read counts with 'voom' function with new design matrix
+* Fit a linear model on these normalised data
+* Make the contrast matrix corresponding to the new set of parameters
+* Fit the contrast matrix to the linear model
+* Compute moderated t-statistics of differential expression 
+* Get the output table for the 10 most significant DE genes for this comparison
+* Get the number of genes significantly DE (adjusted p-value < 0.01)
+```
+

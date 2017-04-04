@@ -1,0 +1,186 @@
+## Quality checking and stats
+
+Rsubread provides the number of reads mapped to each gene which can then be used 
+for ploting quality control figures and for differential expression analysis.
+
+QC figures of the mapped read counts can be plotted and investigated for potential 
+outlier libraries and to confirm grouping of samples. 
+
+Before plotting QC figures it is useful to get the experiment design. This will 
+allow labeling of the data with the sample groups they belong to, or any other parameter of interest.
+
+The experiment design file corresponding to this study has been downloaded from 
+the ArrayExpress webpage and formatted as a tab separated file for this analysis 
+purposes. You can find it in the shared directory 
+`../data/Data_Analysis_with_R/RNAseq/raw_data`.
+
+
+```{r}
+EXPMT_DESIGN_FILE <- file.path(RNASeq_DATA_DIR, 'experiment_design.txt')
+
+design <- read.table(EXPMT_DESIGN_FILE, header=T, sep='\t')
+
+rownames(design) <- design$SampleID
+
+#order the design in the same ordering as the counts object
+design <- design[colnames(counts$counts),]
+
+design
+```
+
+```{r}
+samples <- as.character(design$SampleID)
+
+group <- factor(design$tissue)
+group
+```
+
+
+```{r}
+age <- factor(design$age)
+age
+```
+
+### Checking for batch or confounding effects
+
+Density plots of log-intensity distribution of each library can be superposed on 
+a single graph for a better comparison between libraries and for identification of 
+libraries with weird distribution. On the boxplots the density distributions of 
+raw log-intensities are not expected to be identical but still not totally different.
+
+```{r}
+logcounts <- log2(counts$counts+0.1)
+boxplot(logcounts, 
+        main="Distribution of log counts",
+        xlab="",
+        ylab="Log2(raw counts+0.1)",
+        las=2,cex.axis=0.8)
+```
+
+In order to investigate the relationship between samples, hierarchical clustering 
+can be performed using the `heatmap` function. In this example, `heatmap` calculates 
+a matrix of euclidean distances from the mapped read counts for the 100 most highly 
+expressed genes.
+
+```{r}
+select <- order(rowMeans(counts$counts), decreasing=TRUE)[1:100]
+highexprgenes <- counts$counts[select,]
+
+heatmap(highexprgenes, col=topo.colors(50), margin=c(10,6))
+```
+
+You will notice that the samples clustering does not follow the original order 
+in the data matrix (alphabetical order "ERR420386" to "ERR420393"). They have 
+been re-ordered according to the similarity of the 100 genes expression profiles.
+To understand what biological effect lies under this clustering, one can use the 
+samples annotation for labeling (samples group, age, sex etc).
+
+```{r}
+colnames(highexprgenes) <- group
+heatmap(highexprgenes, col=topo.colors(50), margin=c(10,6))
+```
+
+```{block, type="rmdexercise"}
+**Produce a heatmap for the 30 most highly expressed genes and annotate
+the samples with their age**
+
+* List the samples age from the experimental design (check order!)
+
+* Annotate the samples in the normalised dataset with their age
+
+* Subset the read counts object for teh 30 most highly expressed genes
+
+* Plot a heatmap with this subset of data, scaling genes and ordering both
+genes and samples
+
+* Increase or decrease the genes and samples labels font size as required
+```
+
+A Principal Component Analysis (PCA) can also be performed with these data using 
+the `mixOmics` package \cite{LeCao2016}. The proportion of explained variance 
+histogram will show how much of the variability in the data is explained by each components. 
+
+Reads counts need to be transposed before being analysed with the `mixomics` functions, 
+i.e. genes should be in columns and samples should be in rows. This is the code 
+for transposing and checking the data before further steps:
+
+```{r}
+library(mixOmics)
+
+highexprgenes.df <- t(highexprgenes)
+dim(highexprgenes.df)
+```
+
+The proportion of explained variance helps you determine how many components can 
+explain the variability in your dataset and thus how many dimensions you should 
+be looking at.
+
+```{r}
+tune <- tune(highexprgenes.df, center=TRUE, scale=TRUE)
+```
+
+The variable `tune$prop.var` indicates the proportion of explained variance for the first 10 principal components:
+
+```{r}
+tune$prop.var
+```
+
+
+Plotting this variable makes it easier to visualise and will allow future reference:
+```{r}
+plot(tune)
+```
+
+In most cases, the first 2 or 3 components explain more than half the variability 
+in the dataset and can be used for plotting. The `pca` function will perform a 
+principal components analysis on the given data matrix. The `plotIndiv`
+function will provide scatter plots for sample representation. 
+
+```{r}
+result <- pca(highexprgenes.df, ncomp=3, center=T, scale=T)
+
+plotIndiv(result, comp=c(1,2))
+```
+
+
+```{r}
+plotIndiv(result, comp=c(1,2), group=group)
+```
+
+The PCA plot of the first two components show a clear separation of the Brain and 
+Liver samples across the 1st dimension. Within each sample group we can also notice 
+a split between the 4 samples of each group, which seem to cluster in pair. 
+This observation can be explained by another factor of variability in the data, 
+commonly batch effect or another biological biais such as age or sex.
+
+**DON'T NEED TO REDO THE PCA IF THE ORDER OF SAMPLES IS THE SAME, JUST COLOUR**
+
+**SHOULD DO PCA ON THE WHOLE DATASET**
+
+```{block, type='rmdexercise'}
+For the 30 most highly expressed genes, we want to identify the reason
+for the split between samples from the same tissues. To do this, break the 
+problem down:
+
+* Get the read counts for the 30 most highly expressed genes
+* Transpose this matrix of read counts
+* Check the number of dimensions explaining the variability in the dataset
+* Run the PCA with an appropriate number of components
+* Annotate the samples with their age
+    * re-run PCA 
+    * plot the main components
+    
+* Annotate the samples with other clinical data 
+    * re-run the PCA 
+    * plot the main components until you can separate the samples within each tissue group
+```
+
+
+```{r}
+df <- t(counts$counts)
+zero.cols <- which(colSums(df) == 0)
+df <- df[,-zero.cols]
+result <- pca(df,ncomp=3,center=T,scale=T)
+plotIndiv(result,group=group)
+```
+

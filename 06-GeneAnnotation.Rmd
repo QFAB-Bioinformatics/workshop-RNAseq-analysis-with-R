@@ -1,0 +1,77 @@
+## Gene Annotation
+
+The annotation of EntrezGene IDs from RNAseq data can be done using the BioMart database which contains many species including Human, Mouse, Zebrafish, Chicken and Rat.
+
+Get the Ensembl annotation for human genome
+```{r}
+library(biomaRt)
+mart<- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+```
+
+Get entrez gene IDs from limma output table
+```{r}
+entrez_genes <- as.character(rownames(limma.res.pval.FC))
+length(entrez_genes)
+```
+
+
+Interrograte the BioMart database to get gene symbol and description for these genes:
+```{r}
+detags.IDs <- getBM(filters= "entrezgene",
+                    attributes= c("entrezgene","external_gene_name","description"),
+                    values= entrez_genes,
+                    mart= mart)
+dim(detags.IDs)
+head(detags.IDs)
+```
+
+
+In many cases, several annotations ar available per entrez gene ID. This results in dupli-
+cate entries in the output table from getBM . The simplest way to deal with this issue
+is to remove duplicates, although they can also be concatenated in some ways.
+
+Once the annotation has been obtained for all DE genes, this table can be merged with
+the output table from limma for a complete result and an easier interpretation.
+
+```{r}
+detags.IDs.matrix <- detags.IDs[-which(duplicated(detags.IDs$entrezgene)),]
+dim(detags.IDs.matrix)
+head(detags.IDs.matrix)
+```
+
+```{r}
+rownames(detags.IDs.matrix) <- detags.IDs.matrix$entrezgene
+entrez_genes.annot <- detags.IDs.matrix[entrez_genes,]
+limma.res.pval.FC.annot <- cbind(entrez_genes.annot,limma.res.pval.FC)
+head(limma.res.pval.FC.annot)
+```
+
+
+## Gene set enrichment
+
+As previously described, the GOstats package can be used to identify over-represented
+Gene Ontologies in the list of DE genes, by providing the EntrezGeneIDs.
+
+**Refer to previous Sections (1.1.5 and 1.2.5) to perform the gene
+ontology enrichment on the differentially identified genes from this dataset.**
+
+Other software can be used to investigate over-represented pathways, such as GeneGO
+https://portal.genego.com/ and Ingenuity http://www.ingenuity.com/products/
+ipa. The advantage of these applications is that they maintain curated and up-to-date
+extensive databases. They also provide intuitive visualisation and network modelling
+tools.
+
+Save an image of your RNAseq analysis.
+```{r}
+RDataFile <- "RNAseq.RData"
+save.image(RDataFile)
+```
+
+\clearpage
+
+#SessionInfo
+
+```{r}
+sessionInfo()
+```
+
