@@ -94,7 +94,7 @@ code > span.in { color: #008000; } /* Information */
       <nav role="navigation">
 
 <ul class="summary">
-<li><a href="./">A Minimal Book Example</a></li>
+<li><a href="./">RNAseq analysis with R</a></li>
 
 <li class="divider"></li>
 <li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> NGS data exploration</a><ul>
@@ -153,16 +153,23 @@ code > span.in { color: #008000; } /* Information */
 <h2><span class="header-section-number">1.1</span> Required packages for these exercises</h2>
 <p>If you would like to run these exercises again on your own machine, you will need to install the following R packages.</p>
 <ul>
+<li><code>mixOmics</code></li>
+<li><code>tidyr</code></li>
+<li><code>ggplot2</code></li>
+</ul>
+<pre><code>install.packages(c(&#39;mixOmics&#39;,&#39;tidyr&#39;,&#39;ggplot2&#39;))</code></pre>
+<p>Bioconductor packages:</p>
+<ul>
 <li><code>Biostrings</code></li>
 <li><code>ShortRead</code></li>
 <li><code>Rsamtools</code></li>
 <li><code>Rsubread</code></li>
-<li><code>mixOmics</code></li>
 <li><code>edgeR</code></li>
 <li><code>limma</code></li>
-<li><code>tidyr</code></li>
-<li><code>ggplot2</code></li>
+<li><code>org.Hs.eg.db</code></li>
 </ul>
+<pre><code>source(&quot;https://bioconductor.org/biocLite.R&quot;)
+biocLite(c(&quot;Biostrings&quot;,&quot;ShortRead&quot;,&quot;Rsamtools&quot;,...))</code></pre>
 
 </div>
             </section>
