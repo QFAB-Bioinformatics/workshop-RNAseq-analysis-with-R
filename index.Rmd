@@ -30,12 +30,26 @@ own characteristics and challenges.
 If you would like to run these exercises again on your own machine, you will
 need to install the following R packages.
 
+* `mixOmics`
+* `tidyr`
+* `ggplot2`
+
+```{r, eval=F}
+install.packages(c('mixOmics','tidyr','ggplot2'))
+```
+
+Bioconductor packages:
+
 * `Biostrings`
 * `ShortRead`
 * `Rsamtools`
 * `Rsubread`
-* `mixOmics`
 * `edgeR`
 * `limma`
-* `tidyr`
-* `ggplot2`
+* `org.Hs.eg.db`
+
+```{r, eval=F}
+source("https://bioconductor.org/biocLite.R")
+biocLite(c("Biostrings","ShortRead","Rsamtools",...))
+```
+
