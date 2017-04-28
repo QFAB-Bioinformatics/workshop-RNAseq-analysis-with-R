@@ -6,6 +6,9 @@
 \definecolor{shadecolor}{RGB}{235,235,235}
 \definecolor{darkgray}{RGB}{105,105,105}
 
+%% prevent vertical adjustment
+\raggedbottom
+
 %% set header and footer for PDF doc
 \pagestyle{fancy}
 \fancyhead[LO,RE]{}
@@ -39,8 +42,8 @@
 
 
 \renewenvironment{Shaded}
-{\vspace{0em}\begin{leftbar}\begin{snugshade}}
-{\end{snugshade}\end{leftbar}\vspace{0pt}}
+{\vspace{2em}\begin{leftbar}\begin{snugshade}}
+{\end{snugshade}\end{leftbar}\vspace{0em}}
 
 
 %% custom boxes from bookdown
@@ -57,6 +60,12 @@
     }%
   }%
 \fi
+
+\newenvironment{rmdsyntax}[1]
+  {\vspace{1.5em}\begin{shaded*}
+  #1
+  \end{shaded*}
+  }
 
 \newenvironment{rmdblock}[1]
   {\vspace{1.5em}\begin{shaded*}
@@ -89,4 +98,7 @@
   {\end{rmdblock}}
 \newenvironment{rmdexercise}
   {\begin{rmdblock}{exercise}}
+  {\end{rmdblock}}
+\newenvironment{rmdsolution}
+  {\begin{rmdblock}{solution}}
   {\end{rmdblock}}

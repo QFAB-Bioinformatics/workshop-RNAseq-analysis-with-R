@@ -1,4 +1,4 @@
-## Quality checking and stats
+## Exploratory analysis
 
 Rsubread provides the number of reads mapped to each gene which can then be used 
 for ploting quality control figures and for differential expression analysis.
@@ -15,86 +15,201 @@ purposes. You can find it in the shared directory
 `../data/Data_Analysis_with_R/RNAseq/raw_data`.
 
 
-```{r}
+```{r experiment-design}
 EXPMT_DESIGN_FILE <- file.path(RNASeq_DATA_DIR, 'experiment_design.txt')
 
-design <- read.table(EXPMT_DESIGN_FILE, header=T, sep='\t')
-
-rownames(design) <- design$SampleID
+expr.design <- read.table(EXPMT_DESIGN_FILE, header=T, sep='\t')
+rownames(expr.design) <- expr.design$SampleID
 
 #order the design in the same ordering as the counts object
-design <- design[colnames(counts$counts),]
+expr.design <- expr.design[colnames(counts$counts),]
 
-design
+expr.design
 ```
 
-```{r}
-samples <- as.character(design$SampleID)
+```{r group-of-interest}
+samples <- as.character(expr.design$SampleID)
+group <- factor(expr.design$tissue)
+group
+```
 
-group <- factor(design$tissue)
+The samples are in random order and not sorted by the tissue type, this will make visualisation tricker in downstream analysis.
+We will reorder the samples by tissue type.
+
+```{r order-by-tissue}
+sample.order <- order(expr.design$tissue)
+sample.order
+
+expr.design <- expr.design[sample.order,]
+raw.counts <- raw.counts[,sample.order]
+
+expr.design
+```
+
+This is will be much easier when we come to visualise our data later. Remember to reassign the groups:
+```{r re-group}
+group <- expr.design$tissue
 group
 ```
 
 
-```{r}
-age <- factor(design$age)
-age
-```
 
-### Checking for batch or confounding effects
+## Understanding the dataset
 
 Density plots of log-intensity distribution of each library can be superposed on 
 a single graph for a better comparison between libraries and for identification of 
 libraries with weird distribution. On the boxplots the density distributions of 
 raw log-intensities are not expected to be identical but still not totally different.
 
-```{r}
-logcounts <- log2(counts$counts+0.1)
+```{r log-counts, fig.width=7}
+logcounts <- log2(raw.counts+0.1)
+
+group.colours <- c('slateblue','orange')[group];
+par(mar=c(5.1, 5, 4.1, 7), xpd=TRUE)
 boxplot(logcounts, 
+        col=group.colours,
         main="Distribution of log counts",
         xlab="",
         ylab="Log2(raw counts+0.1)",
         las=2,cex.axis=0.8)
+legend("topright", inset=c(-0.2,0), cex = 0.8,
+       legend = levels(group),
+       fill = unique(group.colours))
 ```
 
-In order to investigate the relationship between samples, hierarchical clustering 
-can be performed using the `heatmap` function. In this example, `heatmap` calculates 
-a matrix of euclidean distances from the mapped read counts for the 100 most highly 
-expressed genes.
+## Prefiltering
 
-```{r}
-select <- order(rowMeans(counts$counts), decreasing=TRUE)[1:100]
-highexprgenes <- counts$counts[select,]
+Before proceeding with differential expression analysis, it is useful to filter 
+out very lowly expressed genes. This will help increasing the statistical power 
+of the analysis while keeping genes of interest. A common way to do this is by 
+filtering out genes having less than 1 count-per-million reads (cpm) in half the samples. 
 
-heatmap(highexprgenes, col=topo.colors(50), margin=c(10,6))
+The `edgeR` \cite{Robinson2009} library provides the `cpm` function which can be used here.
+
+```{r pre-filtering}
+library(edgeR)
+isexpr <- rowSums(cpm(raw.counts)> 1) >= 4
+table(isexpr)
 ```
 
-You will notice that the samples clustering does not follow the original order 
-in the data matrix (alphabetical order "ERR420386" to "ERR420393"). They have 
-been re-ordered according to the similarity of the 100 genes expression profiles.
-To understand what biological effect lies under this clustering, one can use the 
-samples annotation for labeling (samples group, age, sex etc).
+```{r filtered-counts}
+filtered.raw.counts <- raw.counts[isexpr,]
+dim(filtered.raw.counts)
+```
 
-```{r}
-colnames(highexprgenes) <- group
-heatmap(highexprgenes, col=topo.colors(50), margin=c(10,6))
+That means that `nrow(raw.counts)-nrow(filtered.raw.counts)` are removed.
+
+## Normalisation
+
+Since we want to make between sample comparisons, we need to normalize the dataset.
+
+### Defining the model matrix
+
+`Limma` \cite{Ritchie2015} requires a design matrix to be created for the DE analysis. This is created using `model.matrix()` function and `formula` notation in R. It is required in all linear modeling.
+
+```{r model-matrix}
+design <- model.matrix(~0 + expr.design$tissue, data=expr.design)
+colnames(design) <- levels(expr.design$tissue)
+design
+```
+
+Now, we can normalise the dataset using the following commands. The 
+`calcNormFactors()`, calculates the normalization factors to scale the library sizes.
+
+The `limma` package (since version 3.16.0) offers the `voom` function that will 
+normalise read counts and apply a linear model to the normalised data before
+computing moderated t-statistics of differential expression.
+
+The returned data object consists of a few attributes, which you can check using `names(y)`, one of which
+is the *normalised expression* (`y$E`) values in log2 scale.
+
+```{r normalisation}
+library(limma)
+
+dge <- DGEList(filtered.raw.counts)
+dge <- calcNormFactors(dge)
+y <- voom(dge, design)
+norm.expr <- y$E
+
+write.table(norm.expr, file=file.path(RESULTS_DIR, "normalised_counts.txt"), 
+            row.names=T, quote=F, sep="\t")
+```
+
+```{r boxplots-norm}
+boxplot(norm.expr, 
+        col=group.colours,
+        main="Distribution of normalised counts",
+        xlab="",
+        ylab="log2 normalised expression",
+        las=2,cex.axis=0.8)
 ```
 
 ```{block, type="rmdexercise"}
-**Produce a heatmap for the 30 most highly expressed genes and annotate
-the samples with their age**
+**Challenge**
+1. Add in the legend to the plot above (hint: see code for previous boxplot)
 
-* List the samples age from the experimental design (check order!)
-
-* Annotate the samples in the normalised dataset with their age
-
-* Subset the read counts object for teh 30 most highly expressed genes
-
-* Plot a heatmap with this subset of data, scaling genes and ordering both
-genes and samples
-
-* Increase or decrease the genes and samples labels font size as required
+2. Can you put the boxplots side by side to show before and after normalisation? (hint: `mfrow=c(X,X)`)
 ```
+
+```{r, echo=F, fig.width=7}
+par(mfrow=c(1,2),mar=c(5.1, 5, 4.1, 4),xpd=TRUE)
+boxplot(logcounts, 
+        col=group.colours,
+        main="Before norm",
+        xlab="",
+        ylab="Log2(raw counts+0.1)",
+        las=2,cex.axis=0.8)
+legend("topright", inset=c(-0.45,0), cex = 0.8,
+       legend = levels(group),
+       fill = unique(group.colours))
+boxplot(norm.expr, 
+        col=group.colours,
+        main="After norm",
+        xlab="",
+        ylab="log2 normalised expression",
+        las=2,cex.axis=0.8)
+```
+
+```{block, type="rmdsolution"}
+**Solution**
+
+\begin{verbatim}
+par(mfrow=c(1,2),mar=c(5.1, 5, 4.1, 4),xpd=TRUE)
+boxplot(logcounts, 
+        col=group.colours,
+        main="Before norm",
+        xlab="",
+        ylab="Log2(raw counts+0.1)",
+        las=2,cex.axis=0.8)
+legend("topright", inset=c(-0.45,0), cex = 0.8,
+       legend = levels(group),
+       fill = unique(group.colours))
+boxplot(norm.expr, 
+        col=group.colours,
+        main="After norm",
+        xlab="",
+        ylab="log2 normalised expression",
+        las=2,cex.axis=0.8)
+\end{verbatim}        
+```
+
+
+
+### MA-plots
+
+```{r MA-plots, fig.width=7}
+par(mfrow=c(2,2))
+for (ix in 1:2) {
+  plotMD(dge,ix)
+  abline(h=0,col='grey')
+  plotMD(y,ix)
+  abline(h=0,col='grey')
+}
+```
+
+## Using visualisation to verify (sanity checks)
+
+### Principal Component Analysis (PCA)
 
 A Principal Component Analysis (PCA) can also be performed with these data using 
 the `mixOmics` package \cite{LeCao2016}. The proportion of explained variance 
@@ -104,58 +219,75 @@ Reads counts need to be transposed before being analysed with the `mixomics` fun
 i.e. genes should be in columns and samples should be in rows. This is the code 
 for transposing and checking the data before further steps:
 
-```{r}
+```{r PCA}
 library(mixOmics)
 
-highexprgenes.df <- t(highexprgenes)
-dim(highexprgenes.df)
+norm.expr.df <- t(norm.expr)
+dim(norm.expr.df)
+
+## check if any feature has 0 variance, if so might need to remove
+colVar <- apply(norm.expr.df,2,var)
+length(which(colVar==0))
 ```
 
 The proportion of explained variance helps you determine how many components can 
 explain the variability in your dataset and thus how many dimensions you should 
 be looking at.
 
-```{r}
-tune <- tune(highexprgenes.df, center=TRUE, scale=TRUE)
+```{r tuning, fig.height=3}
+tuning <- tune.pca(norm.expr.df, center=TRUE, scale=TRUE)
 ```
 
 The variable `tune$prop.var` indicates the proportion of explained variance for the first 10 principal components:
 
-```{r}
-tune$prop.var
-```
-
-
-Plotting this variable makes it easier to visualise and will allow future reference:
-```{r}
-plot(tune)
-```
+Plotting this variable makes it easier to visualise and will allow future reference.
 
 In most cases, the first 2 or 3 components explain more than half the variability 
 in the dataset and can be used for plotting. The `pca` function will perform a 
 principal components analysis on the given data matrix. The `plotIndiv`
 function will provide scatter plots for sample representation. 
 
-```{r}
-result <- pca(highexprgenes.df, ncomp=3, center=T, scale=T)
-
-plotIndiv(result, comp=c(1,2))
+```{r run-pca, fig.height=4}
+pca.result <- pca(norm.expr.df, ncomp=3, center=T, scale=T)
+plotIndiv(pca.result, comp=c(1,2))
 ```
 
 
-```{r}
-plotIndiv(result, comp=c(1,2), group=group)
+```{r sample-plot-group, fig.height=4}
+plotIndiv(pca.result, comp=c(1,2), group=group, cex=4, xlim=c(-110,110))
+```
+
+Once we colour by the tissue types, there is obviously a difference between the two groups.
+This is clearly visible by the gap on the x-axis (principal component 1), which explains
+63% of the variability observed in the data.
+
+```{block, type='rmdexercise'}
+**Challenge**
+
+There is also a vertical gap (principal component 2) separating the 2 samples in each
+tissue type. Can you explain what this separation is? (hint: look at the experiment design `expr.design`).
+```
+
+```{block, type="rmdsolution"}
+**Solution**
+
+Colour the PCA plot by `group=expr.design$technical.replicate.group`.
+
+**Food for thought**: also colour the plot using `group=expr.design$age`, how does this compare when you coloured using the `tissue` type? They look the same, so we cannot confirm if the horizontal separation is in fact due to tissue type
+or due to the age. This is why experimental design and replicates are extremely important when performing an experiment.
+```
+
+
+```{r sample-plot-age, include=FALSE}
+plotIndiv(pca.result, comp=c(1,2), group=expr.design$technical.replicate.group, 
+          pch=21, cex=5)
 ```
 
 The PCA plot of the first two components show a clear separation of the Brain and 
 Liver samples across the 1st dimension. Within each sample group we can also notice 
 a split between the 4 samples of each group, which seem to cluster in pair. 
 This observation can be explained by another factor of variability in the data, 
-commonly batch effect or another biological biais such as age or sex.
-
-**DON'T NEED TO REDO THE PCA IF THE ORDER OF SAMPLES IS THE SAME, JUST COLOUR**
-
-**SHOULD DO PCA ON THE WHOLE DATASET**
+commonly batch effect or another biological bias such as age or sex.
 
 ```{block, type='rmdexercise'}
 For the 30 most highly expressed genes, we want to identify the reason
@@ -174,13 +306,3 @@ problem down:
     * re-run the PCA 
     * plot the main components until you can separate the samples within each tissue group
 ```
-
-
-```{r}
-df <- t(counts$counts)
-zero.cols <- which(colSums(df) == 0)
-df <- df[,-zero.cols]
-result <- pca(df,ncomp=3,center=T,scale=T)
-plotIndiv(result,group=group)
-```
-

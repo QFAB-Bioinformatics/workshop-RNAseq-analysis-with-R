@@ -1,16 +1,17 @@
 --- 
 title: "Differentially expressed gene analysis of RNA-seq data using R"
-date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
 output: bookdown::gitbook
 documentclass: book
+classoption: a4paper
 bibliography: [book.bib, packages.bib, references.bib]
 biblio-style: apalike
 link-citations: yes
 ---
 
 ```{r, echo=FALSE, include=FALSE}
-knitr::opts_chunk$set(cache=TRUE, eval=F)
+library(knitr)
+knitr::opts_chunk$set(cache=TRUE)
 ```
 
 # NGS data exploration
@@ -31,78 +32,10 @@ need to install the following R packages.
 
 * `Biostrings`
 * `ShortRead`
+* `Rsamtools`
 * `Rsubread`
 * `mixOmics`
 * `edgeR`
 * `limma`
-
-
-## Reading from a fasta file
-
-FASTA format is a text-based format for representing nucleotide and peptide 
-sequences using their single-letter IUPAC codes. The format also allows for 
-sequence names and comments to precede the sequences. The format originates from 
-the FASTA software package, but has now become a standard in the field of bioinformatics.
-
-The simplicity of FASTA format makes it easy to manipulate and parse sequences 
-using text-processing tools that are built into R. A number of packages 
-make the process of loading a fasta file very much easier.
-
-```{r}
-library(Biostrings)
-library(ShortRead)
-
-NGS_DIR <- "../data/Data_Analysis_with_R/NGS_sequences"
-comt <- readFasta(file.path(NGS_DIR, "comt.fasta"))
-print(comt)
-```
-
-
-```{r}
-id(comt)
-```
-
-```{r}
-sread(comt)
-```
-
-```{r}
-width(comt)
-length(comt)
-```
-
-From this code it can be seen that we have created an object of `ShortRead` type 
-that contains a `DNAStringSet` containing two DNA sequences. The `width()` 
-function reports the length of each DNA sequence while the `length()` function 
-reports the number of DNA sequences in the sequence collection.
-
-The character representation of the sequence remains accessible:
-
-```{r}
-comtStr <- toSring(sread(comt[1]))
-class(comtStr)
-substring(comtStr,1,50)
-```
-
-Find all positions in the sequence with "ATG" codon:
-```{r}
-gregexpr("ATG", comtStr)
-as.vector(gregexpr("ATG", comtStr)[[1]])
-```
-
-
-There are a wide range of different functions that can be applied to the manipulation
-of individual DNA sequences. We could apply functions that include `strsplit`, 
-`replaceLetterAt`, `subseq`, `maskMotif`, `reverseComplement` etc. These methods 
-work well but for single sequences or for a small collection of sequences, for
-batch jobs, other software might be more suitable.
-
-There are a number of other convenience utilities in R/Bioconductor:
-
-```{r}
-GENETIC_CODE
-```
-
-```{r}
-IUPAC_CODE_MAP
-```
+* `tidyr`
+* `ggplot2`

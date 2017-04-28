@@ -16,11 +16,11 @@ bookdown::gitbook:
     edit:
       link: https://github.com/rstudio/bookdown-demo/edit/master/%s
 bookdown::pdf_book:
-  higlight: haddock
+  highlight: haddock
   includes:
     in_header: preamble.tex
   fig_width: 5
-  fig_height: 4
-  latex_engine: xelatex
+  fig_height: 5
+  latex_engine: pdflatex
+  keep_tex: true
   citation_package: natbib
-bookdown::epub_book: default
