@@ -157,7 +157,7 @@ code > span.in { color: #008000; } /* Information */
 <li><code>tidyr</code></li>
 <li><code>ggplot2</code></li>
 </ul>
-<pre><code>install.packages(c(&#39;mixOmics&#39;,&#39;tidyr&#39;,&#39;ggplot2&#39;))</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install.packages</span>(<span class="kw">c</span>(<span class="st">&#39;mixOmics&#39;</span>,<span class="st">&#39;tidyr&#39;</span>,<span class="st">&#39;ggplot2&#39;</span>))</code></pre></div>
 <p>Bioconductor packages:</p>
 <ul>
 <li><code>Biostrings</code></li>
@@ -168,8 +168,8 @@ code > span.in { color: #008000; } /* Information */
 <li><code>limma</code></li>
 <li><code>org.Hs.eg.db</code></li>
 </ul>
-<pre><code>source(&quot;https://bioconductor.org/biocLite.R&quot;)
-biocLite(c(&quot;Biostrings&quot;,&quot;ShortRead&quot;,&quot;Rsamtools&quot;,...))</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">source</span>(<span class="st">&quot;https://bioconductor.org/biocLite.R&quot;</span>)
+<span class="kw">biocLite</span>(<span class="kw">c</span>(<span class="st">&quot;Biostrings&quot;</span>,<span class="st">&quot;ShortRead&quot;</span>,<span class="st">&quot;Rsamtools&quot;</span>,...))</code></pre></div>
 
 </div>
             </section>
@@ -192,13 +192,13 @@ require(["gitbook"], function(gitbook) {
 gitbook.start({
 "sharing": {
 "github": false,
-"facebook": true,
-"twitter": true,
+"facebook": false,
+"twitter": false,
 "google": false,
 "weibo": false,
 "instapper": false,
 "vk": false,
-"all": ["facebook", "google", "twitter", "weibo", "instapaper"]
+"all": {}
 },
 "fontsettings": {
 "theme": "white",
@@ -206,8 +206,8 @@ gitbook.start({
 "size": 2
 },
 "edit": {
-"link": "https://github.com/rstudio/bookdown-demo/edit/master/index.Rmd",
-"text": "Edit"
+"link": null,
+"text": null
 },
 "download": ["RNAseq-analysis.pdf"],
 "toc": {
