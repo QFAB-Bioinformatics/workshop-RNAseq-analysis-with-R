@@ -13,8 +13,14 @@ bookdown::gitbook:
     fontsettings:
       family: sans
       size: 2
-    edit:
-      link: https://github.com/rstudio/bookdown-demo/edit/master/%s
+    sharing:
+      facebook: no
+      twitter: no
+      google: no
+      weibo: no
+      instapper: no
+      vk: no
+      all: []
 bookdown::pdf_book:
   highlight: haddock
   includes:
