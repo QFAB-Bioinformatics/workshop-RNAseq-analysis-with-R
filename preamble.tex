@@ -1,0 +1,104 @@
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{framed,color}
+\usepackage{fancyhdr}
+
+\definecolor{shadecolor}{RGB}{235,235,235}
+\definecolor{darkgray}{RGB}{105,105,105}
+
+%% prevent vertical adjustment
+\raggedbottom
+
+%% set header and footer for PDF doc
+\pagestyle{fancy}
+\fancyhead[LO,RE]{}
+\fancyfoot[LO,RE]{QFAB Bioinformatics | QCIF}
+\fancyfoot[LE,RO]{\thepage}
+\fancyfoot[CO,CE]{}
+
+%% redefine some styles
+%\setlength{\parskip}{1em}
+
+\makeatletter
+\def\@xobeysp{\mbox{}\space}
+\def\verbatim@font{\normalfont\ttfamily\raggedright\leftskip\@totalleftmargin\vspace{-1em}}
+\makeatother
+
+
+%% commands for the left bar
+\newlength{\leftbarwidth}
+\newlength{\leftbarsep}
+
+\newcommand*{\leftbarcolorcmd}{\color{darkgray}}% as a command to be more flexible
+
+\renewenvironment{leftbar}{%
+    \def\FrameCommand{{\leftbarcolorcmd{\vrule width \leftbarwidth\relax\hspace {\leftbarsep}}}}%
+    \MakeFramed {\advance \hsize -\width \FrameRestore }%
+}{%
+    \endMakeFramed
+}
+\setlength{\leftbarwidth}{10pt}
+\setlength{\leftbarsep}{0pt}
+
+
+\renewenvironment{Shaded}
+{\vspace{2em}\begin{leftbar}\begin{snugshade}}
+{\end{snugshade}\end{leftbar}\vspace{0em}}
+
+
+%% custom boxes from bookdown
+\ifxetex
+  \usepackage{letltxmacro}
+  \setlength{\XeTeXLinkMargin}{1pt}
+  \LetLtxMacro\SavedIncludeGraphics\includegraphics
+  \def\includegraphics#1#{% #1 catches optional stuff (star/opt. arg.)
+    \IncludeGraphicsAux{#1}%
+  }%
+  \newcommand*{\IncludeGraphicsAux}[2]{%
+    \XeTeXLinkBox{%
+      \SavedIncludeGraphics#1{#2}%
+    }%
+  }%
+\fi
+
+\newenvironment{rmdsyntax}[1]
+  {\vspace{1.5em}\begin{shaded*}
+  #1
+  \end{shaded*}
+  }
+
+\newenvironment{rmdblock}[1]
+  {\vspace{1.5em}\begin{shaded*}
+  \begin{itemize}
+  \renewcommand{\labelitemi}{
+    \raisebox{-.7\height}[0pt][0pt]{
+      {\setkeys{Gin}{width=3em,keepaspectratio}\includegraphics{images/#1}}
+    }
+  }
+  \item
+  }
+  {
+  \end{itemize}
+  \end{shaded*}
+  }
+\newenvironment{rmdnote}
+  {\begin{rmdblock}{note}}
+  {\end{rmdblock}}
+\newenvironment{rmdcaution}
+  {\begin{rmdblock}{caution}}
+  {\end{rmdblock}}
+\newenvironment{rmdimportant}
+  {\begin{rmdblock}{important}}
+  {\end{rmdblock}}
+\newenvironment{rmdtip}
+  {\begin{rmdblock}{tip}}
+  {\end{rmdblock}}
+\newenvironment{rmdwarning}
+  {\begin{rmdblock}{warning}}
+  {\end{rmdblock}}
+\newenvironment{rmdexercise}
+  {\begin{rmdblock}{exercise}}
+  {\end{rmdblock}}
+\newenvironment{rmdsolution}
+  {\begin{rmdblock}{solution}}
+  {\end{rmdblock}}

@@ -1,0 +1,300 @@
+## Reading from a fasta file
+
+FASTA format is a text-based format for representing nucleotide and peptide 
+sequences using their single-letter IUPAC codes. The format also allows for 
+sequence names and comments to precede the sequences. The format originates from 
+the FASTA software package, but has now become a standard in the field of bioinformatics.
+
+The simplicity of FASTA format makes it easy to manipulate and parse sequences 
+using text-processing tools that are built into R. A number of packages 
+make the process of loading a fasta file very much easier.
+
+```{r read-fasta}
+library(Biostrings)
+library(ShortRead)
+
+NGS_DIR <- "../data/NGS_sequences"
+comt <- readFasta(file.path(NGS_DIR, "comt.fasta"))
+print(comt)
+```
+
+
+```{r fasta-id}
+id(comt)
+```
+
+```{r fasta-sread}
+sread(comt)
+```
+
+```{r fasta-stat}
+width(comt)
+length(comt)
+```
+
+From this code it can be seen that we have created an object of `ShortRead` type 
+that contains a `DNAStringSet` containing two DNA sequences. The `width()` 
+function reports the length of each DNA sequence while the `length()` function 
+reports the number of DNA sequences in the sequence collection.
+
+The character representation of the sequence remains accessible:
+
+```{r fasta-seq}
+comtStr <- toString(sread(comt[1]))
+class(comtStr)
+substring(comtStr,1,50)
+```
+
+Find all positions in the sequence with "ATG" codon:
+```{r fasta-grep}
+gregexpr("ATG", comtStr)
+as.vector(gregexpr("ATG", comtStr)[[1]])
+```
+
+
+There are a wide range of different functions that can be applied to the manipulation
+of individual DNA sequences. We could apply functions that include `strsplit`, 
+`replaceLetterAt`, `subseq`, `maskMotif`, `reverseComplement` etc. These methods 
+work well but for single sequences or for a small collection of sequences, for
+batch jobs, other software might be more suitable.
+
+There are a number of other convenience utilities in R/Bioconductor:
+
+```{r genetic-code}
+GENETIC_CODE
+```
+
+```{r iupac-map}
+IUPAC_CODE_MAP
+```
+
+## Parsing FastQ files
+
+For a more comprehensive review of what can be performed using `R/Bioconductor` 
+for short reads let us have a look at some data from the public domain. The 
+Short Read Archive (SRA) hosted by the NBCI and provides a public repository 
+where high dimensional data can be shared with the community. Study `ERX337002` 
+looks at the metagenomics of food (http://www.ncbi.nlm.nih.gov/sra/ERX337002).
+The Ion Torrent platform has been used to sequence the microbial content of an artisanal cheese. 
+
+The raw data has been downloaded from the public domain and has been converted 
+from the `sra` format into a `fastq` file format (using SRA Toolkit) that can be 
+used with a number of packages. The fastq file prepared has been gzipped to 
+save space (and increase read performance).
+  
+
+```
+curl -0 ftp://ftp-trace.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByExp/sra/ERX/ERX337/ERX337002/
+ERR364233.sra
+fastq-dump ERR364233.sra
+gzip ERR364233.fastq
+```
+
+A brief summary of the content in the file can be prepared by loading the fastq 
+file with the `readFastq` function.
+
+```{r readfastq}
+cheese <- readFastq(file.path(NGS_DIR, "ERR364233.subset.fastq.gz"))
+print(cheese)
+```
+
+```{r fastqsummary}
+qaSummary <- qa(cheese, NGS_DIR)
+report(qaSummary, dest="./results")
+```
+
+```{block, type="rmdexercise"}
+1. Enter the above commands.
+2. Click on the **Files** tab in the bottom-right corner of RStudio, then click on **More** > **Go to working directory**.
+3. Click on **New Folder** and create the `results` folder.
+4. Run the `qaSummary()` and `report()` commands as above, if not already done.
+5. Click on the **results** folder and the **index.html** file.
+6. Select the **View in Web Browser** (if a popup window appears click Try again).
+7. Have a look a the report from the `qaSummary()` function.
+```
+
+
+This shows that there are 200K sequence reads in the sequence collection 
+that have a length of between 8 and 358 nucleotides. Let's have a look at the distribution of read lengths:
+
+```{r read-histogram}
+hist(width(cheese), breaks=100)
+```
+
+We recommend that we do not use such short reads in our sequence collection.
+Filter out sequences that are less than 100 nt in length and replot the distribution.
+
+```{r read-filtering}
+cheese.filtered <- cheese[-which(width(cheese) < 100)]
+hist(width(cheese.filtered), breaks=100)
+```
+
+```{block, type="rmdexercise"}
+How many reads were removed from the filtering step? _________
+(**hint** `length()`)
+```
+
+We have looked at the distribution of sequence lengths in the collection. We can
+also check the distribution of individual nucleotides in the collection. 
+The `alphabetFrequency` function collects frequency counts for each of the 
+IUPAC nucleotides in a `DNAStringSet` object. The method will generate a table 
+that be summarised and plotted using your preferred graphics library.
+
+```{r read-baseFreq}
+freq <- alphabetFrequency(sread(cheese.filtered))
+totalCount <- colSums(freq)
+barplot(totalCount[1:4])
+```
+
+```{block, type="rmdexercise"}
+1. Run the command above.
+2. What *data type* is the variable `freq`? ________
+3. What are the dimensions of `freq`? ______________
+4. Why did we only plot the first 4 elements of `totalCount`? ________
+
+
+```
+
+Similar plots can be prepared for di- and trinucleotide frequencies, this looks 
+at all possible words. You can similarly look for hexanucleotide frequencies 
+or any other number, check the `alphabetFrequency()` documentation. This can
+assists in detecting any over-represented subsequences.
+
+```{r read-dinucFreq}
+barplot(colSums(dinucleotideFrequency(sread(cheese.filtered))),cex.axis = 0.75, las=2)
+```
+
+
+Depending on the sequencing strategy that you applied, you may have ligated 
+synthetic adapter sequences, primers and other constructs within the target 
+amplicons. There are a number of methods for stripping such synthetic sequences 
+from your sequence collection.
+
+```{r read-trimming}
+head(sread(cheese.filtered))
+cloningPrimer <- "AACATTTGTCCTAATCATTGGGGATA"
+cheese.clipped <- trimLRPatterns(Lpattern = cloningPrimer, subject=cheese.filtered,
+                                 max.Lmismatch = 0.33)
+head(sread(cheese.clipped))
+```
+
+There is of course a lot more that can be done to allow for perfect, imperfect and 
+truncated primer sequences or adapters at either the forward or reverse ends of the sequence.
+
+One of the reasons why the `fastq` file format has become so popular in genomics is 
+that in addition to storing information relating to the DNA sequence, the file stores
+information on the DNA sequence and the quality (confidence score that the base has been measured correctly). 
+
+The quality scores in a ShortRead data collection are accessible using the `quality()` function.
+
+```{r read-quality-compare}
+head(quality(cheese.clipped))
+encoding(quality(cheese.clipped))
+cheese.quality <- as(quality(cheese.clipped), "matrix")
+hist(rowMeans(cheese.quality[sample(nrow(cheese.quality), 25000),],na.rm=TRUE), 
+     main="", xlab="")
+```
+
+```{block, type="rmdexercise"}
+1. Type in the commands above.
+2. What *data type* is the variable `cheese.quality`? ______________
+3. What is the dimension of `cheese.quality`? ______________________
+4. How does the number of columns relate to the length of the reads? _____
+  
+5. Below are the broken-down parts of the `hist(...)` function that produced
+   the plot above. The list starts with the most inner function and works it's
+   way out. Can you describe what each inner function is doing and the expected result?
+   The letter in the curly braces e.g. \{a\} means substitute the result
+   from the part \{a\} into this function.
+   
+   a. `nrow(cheese.quality)`: ______________________
+   b. `sample({a}, 25000)`  : ______________________
+   c. `cheese.quality[{b},]` : _____________________
+   d. `rowMeans({c}, na.rm=TRUE)`: _________________
+   e. `hist({d}, main="", xlab="")`: _______________
+```
+
+The code above presents a text format (representation of the integer based quality scores) 
+of the quality data. This is converted into a qualityMatrix that can then be
+plotted to show the distribution of quality scores across the sequence collection.
+
+Plotting the per-base quality scores is the goal of many software applications 
+and this can be managed simply in R as well. One of the requirements to produce 
+these plots is however, to reduce the dimensions of the data. Plotting the 
+characteristics for every read is unnecessary since a sample should convey 
+trends within the data.
+
+```{r read-boxplot-quality}
+boxplot(cheese.quality[sample(nrow(cheese.quality), 25000), 1:100],out.cex=0.5)
+```
+
+
+```{r read-boxplot-quality2}
+mung <- function(i) {
+  lower <- i
+  upper <- i + 4
+  if (upper > ncol(cheese.quality)) {
+    upper <- ncol(cheese.quality)
+  }
+  return(rowMeans(cheese.quality[,seq(lower,upper)], na.rm=TRUE))
+}
+
+sequence <- seq(1, ncol(cheese.quality), 5)
+groupedQuality <- as.data.frame(sapply(sequence, mung))
+colnames(groupedQuality) <- as.character(sequence)
+
+boxplot(groupedQuality[sample(nrow(groupedQuality), 25000),], outcex=0.5)
+abline(h=c(20,28),lty=2,col='white')
+rect(-5,28,358,45,col=rgb(0.1,1,0,alpha=0.25),border=NA)
+rect(-5,20,358,28,col=rgb(1,1,0,alpha=0.25),border=NA)
+rect(-5,0,358,20,col=rgb(1,0.6,0.6,alpha=0.25),border=NA)
+```
+
+Having prepared this box-and-whisker plot we can see that the distribution of 
+quality scores is generally OK but there are quite a large number of low quality 
+bases described as the interquartile ranges within the whiskers. To make the 
+data most valuable to the analysis it would be worthwhile to filter the sequences 
+to exclude the substrings of lowest quality from the 3'-end forwards. The 
+`ShortRead` package implements some easy to use functions such as `trimTails` and 
+`trimTailw`.
+
+```{r read-boxplot-quality3}
+cheese.clipped <- trimTailw(cheese.clipped, k=4, a="4", halfwidth=5)
+cheese.quality <- as(quality(cheese.clipped), "matrix")
+dim(cheese.quality)
+sequence <- seq(1, ncol(cheese.quality), 5)
+groupedQuality <- as.data.frame(sapply(sequence, mung))
+colnames(groupedQuality) <- as.character(sequence)
+boxplot(groupedQuality[sample(nrow(groupedQuality), 25000),], outcex=0.5)
+abline(h=c(20,28),lty=2,col='white')
+rect(-5,28,358,45,col=rgb(0.1,1,0,alpha=0.25),border=NA)
+rect(-5,20,358,28,col=rgb(1,0.8,0,alpha=0.25),border=NA)
+rect(-5,0,358,20,col=rgb(1,0.6,0.6,alpha=0.25),border=NA)
+```
+
+This shows that we have greatly improved the overall structure of the data and 
+have removed a large number of the less-than-perfect bases. This example may 
+have been a little more aggressive than we would really wish to apply in the laboratory setting.
+
+The `ShortRead` package has a well implemented framework for filtering 
+sequences and it would be simple to implement other filters as required. The 
+filter can be illustrated by filtering out the homopolymers from the sequence 
+collection. These provide mechanisms for restricting the sequence collection 
+on the basis of e.g. base composition, number of N-residues and even relative abundance.
+
+A whole lot more can be done using the `ShortRead` and `Biostrings` packages. 
+
+```{block, type="rmdexercise"}
+**Prepare some QC information for an Illumina data collection**
+
+Using the RNA-Seq reads that you will perform differential expression with,
+prepare a brief report of the data. Using the `qaSummary` function to prepare
+a synopsis of the library content and investigate the per-base quality
+scores across the sequence collection. Would you recommend that we re-run
+the analysis after some data trimming?
+
+Have a look at the over-represented k-mer words in the sequence collection 
+and see if you can create a filter to strip-out the sequence that contain the
+most abundant k-mer.
+```
+

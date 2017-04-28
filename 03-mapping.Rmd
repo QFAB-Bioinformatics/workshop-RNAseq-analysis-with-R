@@ -1,0 +1,333 @@
+## Mapping
+
+Once the reads have been quality checked and trimmed, the next step is to map the 
+reads to the reference genome (in our case the human genome "hg19"). This can be 
+done with the Bioconductor package `Rsubread` \cite{Liao2013}.
+
+Before mapping the reads to the reference genome you will need to build a
+Rsubread index for that genome. Below are the commands for building an index for 
+the human reference genome using the `buildindex` command.
+
+```{block, type="rmdwarning"}
+**PLEASE DO NOT RUN** the `buildindex()` code in the workshop as this can take awhile. 
+We have already build the index for you.
+```
+
+  
+```{block2, type='rmdtip'}
+`library(Rsubread)`  
+`buildindex(basename=file.path(RSUBREAD_INDEX_BASE, RSUBREAD_INDEX_PATH),
+           reference=REF_GENOME)`
+```
+
+
+```{r hg19-referge, eval=FALSE, include=F}
+hg19ref <- readFastq(REF_GENOME)
+```
+
+
+Once the Rsubread index has been created you can map your reads to the genome by 
+running the `align` command. The code below could be used to map the reads for 
+a specific library against the "hg19" genome.
+
+```{r rsubread-setup, results='hold'}
+library(Rsubread)
+sample <- "ERR420386"
+
+inputFileFWD <- file.path(RNASeq_DATA_DIR, paste0(sample,"_chr21_R1.fastq.gz"))
+inputFileRVS <- file.path(RNASeq_DATA_DIR, paste0(sample,"_chr21_R2.fastq.gz"))
+
+output.bamFile <- file.path(MAPPING_DIR, paste0(sample,".bam"))
+
+inputFileFWD
+inputFileRVS
+output.bamFile
+```
+
+```{block, type="rmdwarning"}
+For the purpose of this workshop the mapping has already been done. 
+This step can take up to a couple of hours per library. 
+
+__Please only run the following command using the subset sample `*_chr21_R1.fastq.gz`, which is much smaller.__
+```
+
+```{r rsubread-align}
+align(index = file.path(RSUBREAD_INDEX_PATH, RSUBREAD_INDEX_BASE),
+     readfile1 = inputFileFWD, 
+     readfile2 = inputFileRVS,
+     input_format = "gzFASTQ",
+     output_file = output.bamFile,
+     output_format = "BAM")
+```
+
+```{block, type="rmdtip"}
+The `nthreads` parameter can be used in the align command to speed up the
+process and run the alignment using several CPUs in parallel.
+```
+
+The function `propmapped` returns the proportion of mapped reads in the output 
+SAM file: total number of input reads, number of mapped reads and proportion of mapped reads.
+
+```{r rsubread-propmap}
+propmapped(output.bamFile)
+```
+
+```{block, type="rmdtip"}
+You can run the `propmapped()` on multiple `bam` files to return a summary of the total number of reads per file and the number of reads that were mappable or unmappable. **However**, this can take a very long time to run for big bam files.
+
+**PLEASE DO NOT RUN**
+
+For example:  
+`all.bam.files <- grep('.bam',dir('../data/RNAseq/mapping',full.names = T),value=T)`  
+`pm <- propmapped(all.bam.files)`
+
+```
+
+### Examining the mapped reads
+
+Create a `BamFile` object and load the file into memory so we can interact with it and find out some information. The `seqinfo()` function outputs the headding information, in this exercise, this is the 
+```{r rsamtools-setup}
+library(Rsamtools)
+bf <- BamFile(output.bamFile)
+seqinfo(bf)
+```
+
+We can take a closer look and find out how many of the reads map to each chromosome. To do this, we need to first
+sort and index the `bam` file.
+
+```{r sort-index-bam}
+output.sorted.bamFile <- file.path(MAPPING_DIR,paste0(sample, '.sorted'))
+sortBam(output.bamFile, output.sorted.bamFile)
+
+output.sorted.bamFile <- paste0(output.sorted.bamFile, ".bam")
+indexBam(output.sorted.bamFile)
+
+dir(MAPPING_DIR, full.names=T)
+output.bam.index <- dir(MAPPING_DIR, full.names=T)[grep(".bai",dir(MAPPING_DIR))]
+output.bam.index
+```
+
+Once the index bam file has been created, we can find out the number of mapped reads per chromosome:
+
+```{r chr-mapping-stats}
+chr.mapping.stats <- idxstatsBam(output.bamFile, index=output.bam.index)
+chr.mapping.stats
+```
+
+This is easiest to view as a plot:
+
+```{r mapping-barplot, fig.height=3.5}
+rownames(chr.mapping.stats) <- chr.mapping.stats$seqnames
+barplot(chr.mapping.stats$mapped, 
+        names.arg=as.character(chr.mapping.stats$seqnames))
+```
+
+```{block, type="rmdexercise"}
+**Mapping percentage**
+
+Using a barplot, can you find out which other chromsome has the highest number of mapped reads?
+
+Hint: repeat the barplot but without the bar for `chr21`.
+```
+
+```{r mapping-barplot-proportion, fig.height=3, echo=F}
+total.mapped.reads <- sum(chr.mapping.stats$mapped)
+chr.mapping.stats$mapped.prop <- chr.mapping.stats$mapped/total.mapped.reads*100
+
+barplot(chr.mapping.stats$mapped.prop[-21], names.arg=chr.mapping.stats$seqnames[-21],
+        las=2, col='slateblue', ylim=c(0,1))
+```
+
+```{block, type="rmdsolution"}
+**Solution**
+
+`total.mapped.reads <- sum(chr.mapping.stats$mapped)`  
+`chr.mapping.stats$mapped.prop <- chr.mapping.stats$mapped/total.mapped.reads*100`  
+`barplot(chr.mapping.stats$mapped.prop[-21],`  
+        `names.arg=chr.mapping.stats$seqnames[-21],`  
+        `las=2, col='slateblue', ylim=c(0,1))`
+```
+
+
+## Quantification
+
+Rsubread provides a read summarization function `featureCounts`, which takes two inputs:
+
+1. the aligned reads (BAM or SAM) and assigns them to 
+2. genomic features (GTF annotation file)
+
+This gives the number of reads mapped per feature, which can then be normalised and tested for differential expression. 
+
+Rsubread comes with in-built annotations for $mm9$, $mm10$ and $hg19$ for users' convenience, but you can also supply your own annotation file (GTF), see the tip below.
+
+```{block, type='rmdwarning'}
+For experiments with lots of samples or on big genomes, this step can also take a while. We will only be performing the feature counts on the subset `chr21` BAM file we created previously.
+```
+
+
+```{r quantification}
+mini.counts <- featureCounts(output.bamFile, 
+                        annot.inbuilt="hg19",
+                        isGTFAnnotationFile=FALSE, 
+                        isPairedEnd=TRUE)
+```
+
+
+Examine the attributes in the returned `mini.counts` object:
+```{r summary-counts}
+summary(mini.counts)
+```
+
+Find the dimension of the `counts` table:\vspace{-2em}
+```{r examine-counts}
+dim(mini.counts$counts)
+mini.counts$counts[1:6,]
+```
+
+Look at the annotations, which corresponds to the rows of the `counts` table:
+```{r counts-annotation}
+head(mini.counts$annotation)
+```
+
+`featureCounts` also returns a very hand summary of the number of reads that were *assigned* or *unassiged*:
+```{r quantification-stats}
+mini.counts$stat
+```
+
+
+```{block, type="rmdexercise"}
+1. Run the above command to perform counting reads for the bam file and then take
+a look at the summary output.
+
+2. Lookup the user guide for Rsubread and find the defintions for the status in `mini.counts$stat` table,
+specifically `Unassigned_Ambiguity`, `Unassigned_NoFeatures` and `Unassigned_Unmapped`. 
+```
+
+
+```{block, type="rmdtip"}
+If you want to get read counts using another annotation.GTF file, use the `annot.ext` parameter.
+For example:
+counts <- featureCounts(output.bamFile, 
+                        annot.ext="annotation.GTF",
+                        isGTFAnnotationFile=TRUE,
+                        isPairedEnd=TRUE)
+```
+
+
+```{block, type="rmdwarning"}
+For the purpose of this workshop the read summarisation step has already 
+been performed for all libraries. You will need to load the corresponding `Rdata`
+file to get these read counts. You can then print out these counts in a text 
+file for future use.
+```
+
+To load the Rdata object file:
+```{r load-raw-counts}
+load("../data/RNAseq/quantification/rawCounts.Rdata")
+summary(counts)
+```
+
+Since we will be using it later for DE analysis, let's create a `raw.counts` object to hold only the count data:
+```{r expr-raw-counts}
+raw.counts <- counts$counts
+dim(raw.counts)
+raw.counts[1:6,1:4]
+```
+
+```{block, type="rmdexercise"}
+**Challenge**
+
+1. What are the count statistics for the "Brain and Liver" study?
+
+2. create a copy of the stats object and change the counts into proportion per sample.
+
+3. The `stat` information from `featureCounts()` will be much easier to digest if we can plot the proportion (or number) of reads assigned and unassigned due to the different status type.  Can you create the following plot?
+```
+
+
+```{r full-counts, echo=F, fig.width=8}
+stats <- counts$stat
+rownames(stats) <- stats$Status
+stats <- stats[,-1]
+keep.rows <- which(rowSums(stats) > 0)
+
+stats.prop <- sweep(stats[keep.rows,], 2, colSums(stats), "/")
+par(mar=c(5.1, 5, 4.1, 9), xpd=TRUE)
+barplot(as.matrix(stats.prop),las=2, cex.names=0.75,cex.axis=0.75, horiz = T,
+        main="Proportion after featureCounts",
+        xlab="%",
+        col=c('skyblue','orange','forestgreen','gold'))
+legend("topright", inset=c(-0.4,0), cex = 0.7,
+       legend = rownames(stats.prop),
+       fill = c('skyblue','orange','forestgreen','gold'))
+```
+
+```{block, type="rmdsolution"}
+**Solution**
+
+All lines starting with `##` are comments.
+  
+
+\begin{verbatim}
+##__________________________________________________________________________
+## Create a new matrix to just hold the statistics data and remove the first
+## column, making this the rownames of the table instead
+  
+stats <- counts$stat
+rownames(stats) <- stats$Status
+stats <- stats[,-1]
+
+##__________________________________________________________________________
+## Double check the `stats` matrix. Notice how there are many rows where all
+## are 0, we do not want to bother showing this in the plot, so we will just 
+## remove them from the matrix. Remember to double check the matrix again.
+
+stats
+rows.remove <- which(rowSums(stats) == 0)
+stats <- stats[-rows.remove,]
+dim(stats)
+stats
+
+##__________________________________________________________________________
+## There are two ways to calculate the proportion, the first is using a 
+## user-defined function and then `apply()`, the second is using a new 
+## function `sweep()`.
+##
+## Only pick one approach.
+
+##### Approach 1
+## Given a vector, we want to divide each element by the sum of that vector. 
+## Create your own function to do this and use `apply()` to call this 
+## function, acting on each column of the matrix.
+
+proportion <- function(x) { x/sum(x) }
+stats.prop <- apply(stats, 2, proportion)
+
+#### Approach 2
+## The alternative approach using the `sweep()` function does not required 
+## a user-defined function:
+
+stats.prop <- sweep(stats, 2, colSums(stats), "/")
+
+##__________________________________________________________________________
+## Create the barplot and rotate the plot using `horiz=T`.
+
+par(mar=c(5.1, 5, 4.1, 9), xpd=TRUE)
+barplot(as.matrix(stats.prop),las=2, cex.names=0.75,cex.axis=0.75, horiz = T,
+        main="Proportion after featureCounts",
+        xlab="%",
+        col=c('skyblue','orange','forestgreen','gold'))
+legend("topright", inset=c(-0.4,0), cex = 0.7,
+       legend = rownames(stats.prop),
+       fill = c('skyblue','orange','forestgreen','gold'))
+\end{verbatim}
+```
+
+
+
+
+Export out the counts table for every sample into a tab-separated file:
+```{r write-counts-table}
+write.table(counts$counts, file=file.path(RESULTS_DIR,"raw_read_counts.txt"), 
+            sep="\t", quote=F, append=F)
+```

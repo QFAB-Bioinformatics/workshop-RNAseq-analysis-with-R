@@ -1,0 +1,155 @@
+## Gene Annotation
+
+The annotation of EntrezGene IDs from RNAseq data can be done using the BioMart database which contains many species including Human, Mouse, Zebrafish, Chicken and Rat.
+
+Get the Ensembl annotation for human genome. Since we used the build-in `hg19` annotation file that comes with Rsubread, we will specify the database version (`GRCh=37`) as a argument in the command.
+
+```{r biomart-setup,eval=F}
+library(biomaRt)
+mart<- useEnsembl(biomart="ensembl",dataset="hsapiens_gene_ensembl",GRCh=37)
+```
+
+```{r,echo=F}
+load("../data/RNAseq/annotation/biomart.Rdata")
+```
+
+
+Get the Entrez gene IDs from the list of significant DEGs as identified using `limma-voom`:
+```{r get-entrezID}
+DEG.entrezID <- rownames(limma.sigFC.DEG)
+head(DEG.entrezID)
+```
+
+Query the BioMart database to get the gene symbols and description for these genes:
+```{r DEG-annotation, eval=F}
+DEG.annot <- getBM(filters= "entrezgene",
+                   attributes= c("entrezgene","external_gene_name","description"),
+                   values= DEG.entrezID,
+                   mart= mart)
+```
+```{r DEG-annotation-stat}
+dim(DEG.annot)
+head(DEG.annot)
+```
+
+```{r, echo=F}
+save(DEG.annot,mart,file='results/RNAseq/biomart.Rdata')
+```
+
+
+In many cases, several annotations are available per entrez gene ID. This results in duplicate entries in the output table from `getBM()`. The simplest way to deal with this issue is to remove duplicates, although they can also be concatenated in some ways.
+
+Once the annotation has been obtained for all DE genes, this table can be merged with
+the output table from limma for a complete result and an easier interpretation.
+
+```{r DEG-annotation-unique}
+DEG.annot.unique <- DEG.annot[-which(duplicated(DEG.annot$entrezgene)),]
+dim(DEG.annot.unique)
+head(DEG.annot.unique)
+```
+
+```{r merge-annotation}
+rownames(DEG.annot.unique) <- DEG.annot.unique$entrezgene
+entrezGenes.annot <- DEG.annot.unique[DEG.entrezID,]
+limma.sigFC.DEG <- cbind(entrezGenes.annot,limma.sigFC.DEG)
+head(limma.sigFC.DEG)
+```
+
+```{block, type="rmdtip"}
+You can find the list of attributes to extract from the `getBM()` function by using the following command:
+`View(listAttributes(mart))`.
+```
+
+## Gene set enrichment
+
+Gene Ontology (GO) enrichment is a method for investigating sets of genes using the Gene Ontology system classification, in which genes are assigned to a particular set of terms for three major domains: cellular component, biological process and molecular function.
+
+The `GOstats` package can test for both over and under representation of GO terms using the standard hypergeometric test. The output of the analysis is typically a ranked list of GO terms, each associated with a p-value.
+
+The hypergeometric test will require both a list of selected genes (e.g. your DE genes) and a "universe" list (e.g. all genes represented that were tested for differential expression), all represented by their "EntrezGene" ID.
+
+Get the list of universe entrez IDs:
+```{r GO-setup}
+library(GOstats)
+universe.entrezID <- rownames(filtered.raw.counts)
+length(universe.entrezID)
+```
+
+Before running the hypergeometric test with the `hyperGTest` function, you need to define the parameters for the test (gene lists, ontology, test direction) as well as the annotation database to be used. The ontology to be tested for can be any of the three GO domains: biological process ("BP"), cellular component ("CC") or molecular function ("MF").
+
+In the example below, we will test for over-represented Biological Processes in our list of differentially expressed genes.
+
+```{r GO-test, eval=F}
+annotationDB <- "org.Hs.eg.db"
+hgCutoff <- 0.05
+
+params <- new("GOHyperGParams",
+              geneIds=DEG.entrezID,
+              universeGeneIds=universe.entrezID,
+              annotation=annotationDB,
+              ontology="BP",
+              pvalueCutoff=hgCutoff,
+              testDirection="over")
+# Run the test
+hg <- hyperGTest(params)
+hg
+```
+
+```{r GO-test-recall,echo=F}
+load('../data/RNAseq/GOstat/GOstatsTest.Rdata')
+annotationDB <- "org.Hs.eg.db"
+hgCutoff <- 0.05
+hg.df <- summary(hg)
+dim(hg.df)
+head(hg.df,10)
+```
+
+
+We need to adjust for multiple testing using the `p.adjust()` function. You can specify the type of adjustment method to use, we are using `bonferroni` in this example. Assign the adjusted pvalues back to the `hg.df` data object. Reorder the columns so that the unadjusted and adjusted p-values are next to each other.
+
+```{r GO-adjust, fig.width=8,fig.height=3.75}
+hg.df <- summary(hg)
+hg.df$Adj.Pvalue <- p.adjust(hg.df$Pvalue, 'bonferroni')
+hg.df <- hg.df[,c(1:2,8,3:7)]
+head(hg.df,10)
+```
+
+Compare before and after multiple adjustment:
+```{r GO-plot, fig.height=4}
+par(mfrow=c(1,2))
+plot(density(hg.df$Pvalue),'Unadjust p-values')
+abline(v=hgCutoff,col='red',lty=2)
+
+plot(density(hg.df$Adj.Pvalue),'Adjusted p-values')
+abline(v=hgCutoff,col='red',lty=2)
+```
+
+Keep only the significant GO terms after adjusting for multiple testing:
+```{r GO-sig}
+sigGO.table <- subset(hg.df, Adj.Pvalue < hgCutoff)
+dim(sigGO.table)
+head(sigGO.table,10)
+```
+
+Other software can be used to investigate over-represented pathways, such as GeneGO
+https://portal.genego.com/ and Ingenuity http://www.ingenuity.com/products/
+ipa. The advantage of these applications is that they maintain curated and up-to-date
+extensive databases. They also provide intuitive visualisation and network modelling
+tools.
+
+---
+
+Save an image of your RNAseq analysis.
+
+```{r gene-set-enrichment}
+save.image(file=file.path(RESULTS_DIR,"RNAseq.Rdata"))
+```
+
+\clearpage
+
+**SessionInfo**
+
+```{r sessionInfo}
+sessionInfo()
+```
+

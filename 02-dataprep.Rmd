@@ -1,0 +1,72 @@
+# RNAseq data analysis
+
+## Data pre-processing
+
+```{block, type="rmdexercise"}
+To start, create a new R project:
+
+1. Click on **File** > **New Project**
+2. Click on **New Directory** > **Empty Project**
+3. Enter a name in **Directory name** (e.g. RNAseq_analysis). Click on **Create Project**. Wait for the project to be created and the page will refresh.
+4. Check in the **Files** tab on the bottom-right corner. You should now see that you are in the **Home > RNAseq_analysis** directory. This is the current working directory and in here, there should be a new file called **RNAseq_analysis.Rproj**.
+```
+
+The data considered for the RNAseq part of the workshop is BioProject PRJEB5297. It is available via ENA (http://www.ebi.ac.uk/ena/data/view/PRJEB5297) or NCBI (https://www.ncbi.nlm.nih.gov/bioproject/PRJEB5297).
+The study corresponds to 8 RNA sequencing libraries from Human brain and liver.
+
+> *__Allele-Specific Expression in Human Brain and Liver__*
+> *Systematic survey of gene and isoform allele-specific expression in human brain and liver tissues, and description of optimised bioinformatic and statistical methods to accurately measure allele-specific expression.*
+
+
+----
+
+**Our biological question for this study:**
+
+What are the list of genes differentially expressed between the $liver$ and the $brain$ samples?
+
+----
+
+
+Raw sequencing data are usually available in FASTQ format, which is a well 
+defined text-based format for storing both biological sequences (usually nucleotide
+sequences) and their corresponding quality scores. The raw data from this study 
+have been downloaded (8Gb / fastq file) into the shared directory 
+`../data/RNAseq/raw_data`.
+
+To see a list of files in this directory, enter the following commands:
+
+```{r raw-data-dir}
+RNASeq_DATA_DIR <- "../data/RNAseq/raw_data"
+dir(RNASeq_DATA_DIR)
+```
+
+
+The first step in a RNAseq analysis is to run a quick quality check on your data, 
+this will give you an idea of the quality of your raw data in terms of number of 
+reads per library, read length, average quality score along the reads, GC content, 
+sequence duplication level, adaptors that might have not been removed correctly from the data etc.
+
+The `fastQC` tool is quick and easy to run and can be downloaded from here: http://www.bioinformatics.babraham.ac.uk/projects/fastqc/.
+
+To ensure highest quality of the sequences for subsequent mapping and 
+differential expression analysis steps, the reads can also be trimmed using 
+the `Trimmomatic` tool (Lohse et al. 2012).
+
+```{block, type="rmdnote"}
+For the scope of this course we will focus on the R-based steps and 
+will assume that the data are fit for purpose.
+```
+
+
+```{r setup-dirs, warning=FALSE, message=FALSE}
+RNASeq_REF_DATA_DIR <- "../data/RNAseq/ref_data"
+
+REF_GENOME <- file.path(RNASeq_REF_DATA_DIR, "hg19.fa")
+RSUBREAD_INDEX_PATH <- file.path(RNASeq_REF_DATA_DIR, "RsubreadIndex")
+
+RSUBREAD_INDEX_BASE <- "hg19"
+
+RESULTS_DIR <- 'results/RNAseq'
+MAPPING_DIR <- file.path(RESULTS_DIR,'mapping')
+dir.create(MAPPING_DIR, recursive=T)
+```

@@ -1,0 +1,41 @@
+--- 
+title: "Differentially expressed gene analysis of RNA-seq data using R"
+site: bookdown::bookdown_site
+output: bookdown::gitbook
+documentclass: book
+classoption: a4paper
+bibliography: [book.bib, packages.bib, references.bib]
+biblio-style: apalike
+link-citations: yes
+---
+
+```{r, echo=FALSE, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(cache=TRUE)
+```
+
+# NGS data exploration
+
+When working on RNA-Seq data using R the short reads are usually mapped to the 
+reference genome using a genome mapper and the DNA sequences themselves are 
+handled by the mapping software. However, it is useful to know that we can perform 
+a number of analyses on the DNA sequences themselves in R. The QC analysis and 
+evaluation of the sequence collection content can be managed as well.
+
+There are a number of different DNA sequencing platforms in use that have their 
+own characteristics and challenges.
+
+## Required packages for these exercises
+
+If you would like to run these exercises again on your own machine, you will
+need to install the following R packages.
+
+* `Biostrings`
+* `ShortRead`
+* `Rsamtools`
+* `Rsubread`
+* `mixOmics`
+* `edgeR`
+* `limma`
+* `tidyr`
+* `ggplot2`
