@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html >
+
+<head>
+
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Differentially expressed gene analysis of RNA-seq data using R</title>
+  <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
+  <meta name="description" content="Differentially expressed gene analysis of RNA-seq data using R">
+  <meta name="generator" content="bookdown 0.3 and GitBook 2.6.7">
+
+  <meta property="og:title" content="Differentially expressed gene analysis of RNA-seq data using R" />
+  <meta property="og:type" content="book" />
+  
+  
+  
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Differentially expressed gene analysis of RNA-seq data using R" />
+  
+  
+  
+
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  
+  
+<link rel="prev" href="reading-from-a-fasta-file.html">
+<link rel="next" href="rnaseq-data-analysis.html">
+
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #0000ff; } /* Keyword */
+code > span.ch { color: #008080; } /* Char */
+code > span.st { color: #008080; } /* String */
+code > span.co { color: #008000; } /* Comment */
+code > span.ot { color: #ff4000; } /* Other */
+code > span.al { color: #ff0000; } /* Alert */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #008000; font-weight: bold; } /* Warning */
+code > span.cn { } /* Constant */
+code > span.sc { color: #008080; } /* SpecialChar */
+code > span.vs { color: #008080; } /* VerbatimString */
+code > span.ss { color: #008080; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { } /* Variable */
+code > span.cf { color: #0000ff; } /* ControlFlow */
+code > span.op { } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #ff4000; } /* Preprocessor */
+code > span.do { color: #008000; } /* Documentation */
+code > span.an { color: #008000; } /* Annotation */
+code > span.cv { color: #008000; } /* CommentVar */
+code > span.at { } /* Attribute */
+code > span.in { color: #008000; } /* Information */
+</style>
+
+<link rel="stylesheet" href="css/style.css" type="text/css" />
+</head>
+
+<body>
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">A Minimal Book Example</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> NGS data exploration</a><ul>
+<li class="chapter" data-level="1.1" data-path="required-packages-for-these-exercises.html"><a href="required-packages-for-these-exercises.html"><i class="fa fa-check"></i><b>1.1</b> Required packages for these exercises</a></li>
+<li class="chapter" data-level="1.2" data-path="reading-from-a-fasta-file.html"><a href="reading-from-a-fasta-file.html"><i class="fa fa-check"></i><b>1.2</b> Reading from a fasta file</a></li>
+<li class="chapter" data-level="1.3" data-path="parsing-fastq-files.html"><a href="parsing-fastq-files.html"><i class="fa fa-check"></i><b>1.3</b> Parsing FastQ files</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="rnaseq-data-analysis.html"><a href="rnaseq-data-analysis.html"><i class="fa fa-check"></i><b>2</b> RNAseq data analysis</a><ul>
+<li class="chapter" data-level="2.1" data-path="data-pre-processing.html"><a href="data-pre-processing.html"><i class="fa fa-check"></i><b>2.1</b> Data pre-processing</a></li>
+<li class="chapter" data-level="2.2" data-path="mapping.html"><a href="mapping.html"><i class="fa fa-check"></i><b>2.2</b> Mapping</a><ul>
+<li class="chapter" data-level="2.2.1" data-path="mapping.html"><a href="mapping.html#examining-the-mapped-reads"><i class="fa fa-check"></i><b>2.2.1</b> Examining the mapped reads</a></li>
+</ul></li>
+<li class="chapter" data-level="2.3" data-path="quantification.html"><a href="quantification.html"><i class="fa fa-check"></i><b>2.3</b> Quantification</a></li>
+<li class="chapter" data-level="2.4" data-path="exploratory-analysis.html"><a href="exploratory-analysis.html"><i class="fa fa-check"></i><b>2.4</b> Exploratory analysis</a></li>
+<li class="chapter" data-level="2.5" data-path="understanding-the-dataset.html"><a href="understanding-the-dataset.html"><i class="fa fa-check"></i><b>2.5</b> Understanding the dataset</a></li>
+<li class="chapter" data-level="2.6" data-path="prefiltering.html"><a href="prefiltering.html"><i class="fa fa-check"></i><b>2.6</b> Prefiltering</a></li>
+<li class="chapter" data-level="2.7" data-path="normalisation.html"><a href="normalisation.html"><i class="fa fa-check"></i><b>2.7</b> Normalisation</a><ul>
+<li class="chapter" data-level="2.7.1" data-path="normalisation.html"><a href="normalisation.html#defining-the-model-matrix"><i class="fa fa-check"></i><b>2.7.1</b> Defining the model matrix</a></li>
+<li class="chapter" data-level="2.7.2" data-path="normalisation.html"><a href="normalisation.html#ma-plots"><i class="fa fa-check"></i><b>2.7.2</b> MA-plots</a></li>
+</ul></li>
+<li class="chapter" data-level="2.8" data-path="using-visualisation-to-verify-sanity-checks.html"><a href="using-visualisation-to-verify-sanity-checks.html"><i class="fa fa-check"></i><b>2.8</b> Using visualisation to verify (sanity checks)</a><ul>
+<li class="chapter" data-level="2.8.1" data-path="using-visualisation-to-verify-sanity-checks.html"><a href="using-visualisation-to-verify-sanity-checks.html#principal-component-analysis-pca"><i class="fa fa-check"></i><b>2.8.1</b> Principal Component Analysis (PCA)</a></li>
+</ul></li>
+<li class="chapter" data-level="2.9" data-path="differential-expression-analysis.html"><a href="differential-expression-analysis.html"><i class="fa fa-check"></i><b>2.9</b> Differential expression analysis</a><ul>
+<li class="chapter" data-level="2.9.1" data-path="differential-expression-analysis.html"><a href="differential-expression-analysis.html#fitting-the-model"><i class="fa fa-check"></i><b>2.9.1</b> Fitting the model</a></li>
+<li class="chapter" data-level="2.9.2" data-path="differential-expression-analysis.html"><a href="differential-expression-analysis.html#comparisons"><i class="fa fa-check"></i><b>2.9.2</b> Comparisons</a></li>
+<li class="chapter" data-level="2.9.3" data-path="differential-expression-analysis.html"><a href="differential-expression-analysis.html#extract-top-de-features"><i class="fa fa-check"></i><b>2.9.3</b> Extract top DE features</a></li>
+</ul></li>
+<li class="chapter" data-level="2.10" data-path="verification-using-visualisation.html"><a href="verification-using-visualisation.html"><i class="fa fa-check"></i><b>2.10</b> Verification using visualisation</a><ul>
+<li class="chapter" data-level="2.10.1" data-path="verification-using-visualisation.html"><a href="verification-using-visualisation.html#hierachical-clustering"><i class="fa fa-check"></i><b>2.10.1</b> Hierachical clustering</a></li>
+</ul></li>
+<li class="chapter" data-level="2.11" data-path="gene-annotation.html"><a href="gene-annotation.html"><i class="fa fa-check"></i><b>2.11</b> Gene Annotation</a></li>
+<li class="chapter" data-level="2.12" data-path="gene-set-enrichment.html"><a href="gene-set-enrichment.html"><i class="fa fa-check"></i><b>2.12</b> Gene set enrichment</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Differentially expressed gene analysis of RNA-seq data using R</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="parsing-fastq-files" class="section level2">
+<h2><span class="header-section-number">1.3</span> Parsing FastQ files</h2>
+<p>For a more comprehensive review of what can be performed using <code>R/Bioconductor</code> for short reads let us have a look at some data from the public domain. The Short Read Archive (SRA) hosted by the NBCI and provides a public repository where high dimensional data can be shared with the community. Study <code>ERX337002</code> looks at the metagenomics of food (<a href="http://www.ncbi.nlm.nih.gov/sra/ERX337002" class="uri">http://www.ncbi.nlm.nih.gov/sra/ERX337002</a>). The Ion Torrent platform has been used to sequence the microbial content of an artisanal cheese.</p>
+<p>The raw data has been downloaded from the public domain and has been converted from the <code>sra</code> format into a <code>fastq</code> file format (using SRA Toolkit) that can be used with a number of packages. The fastq file prepared has been gzipped to save space (and increase read performance).</p>
+<pre><code>curl -0 ftp://ftp-trace.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByExp/sra/ERX/ERX337/ERX337002/
+ERR364233.sra
+fastq-dump ERR364233.sra
+gzip ERR364233.fastq</code></pre>
+<p>A brief summary of the content in the file can be prepared by loading the fastq file with the <code>readFastq</code> function.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cheese &lt;-<span class="st"> </span><span class="kw">readFastq</span>(<span class="kw">file.path</span>(NGS_DIR, <span class="st">&quot;ERR364233.subset.fastq.gz&quot;</span>))
+<span class="kw">print</span>(cheese)</code></pre></div>
+<pre><code>## class: ShortReadQ
+## length: 200000 reads; width: 8..358 cycles</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">qaSummary &lt;-<span class="st"> </span><span class="kw">qa</span>(cheese, NGS_DIR)
+<span class="kw">report</span>(qaSummary, <span class="dt">dest=</span><span class="st">&quot;./results&quot;</span>)</code></pre></div>
+<pre><code>## Warning in dir.create(dest, recursive = TRUE): &#39;./results&#39; already exists</code></pre>
+<pre><code>## [1] &quot;./results/index.html&quot;</code></pre>
+<div class="rmdexercise">
+<ol style="list-style-type: decimal">
+<li>
+Enter the above commands.
+</li>
+<li>
+Click on the <strong>Files</strong> tab in the bottom-right corner of RStudio, then click on <strong>More</strong> &gt; <strong>Go to working directory</strong>.
+</li>
+<li>
+Click on <strong>New Folder</strong> and create the <code>results</code> folder.
+</li>
+<li>
+Run the <code>qaSummary()</code> and <code>report()</code> commands as above, if not already done.
+</li>
+<li>
+Click on the <strong>results</strong> folder and the <strong>index.html</strong> file.
+</li>
+<li>
+Select the <strong>View in Web Browser</strong> (if a popup window appears click Try again).
+</li>
+<li>
+Have a look a the report from the <code>qaSummary()</code> function.
+</li>
+</ol>
+</div>
+<p>This shows that there are 200K sequence reads in the sequence collection that have a length of between 8 and 358 nucleotides. Let’s have a look at the distribution of read lengths:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">hist</span>(<span class="kw">width</span>(cheese), <span class="dt">breaks=</span><span class="dv">100</span>)</code></pre></div>
+<p><img src="RNAseq-analysis_files/figure-html/read-histogram-1.png" width="672" /></p>
+<p>We recommend that we do not use such short reads in our sequence collection. Filter out sequences that are less than 100 nt in length and replot the distribution.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cheese.filtered &lt;-<span class="st"> </span>cheese[-<span class="kw">which</span>(<span class="kw">width</span>(cheese) &lt;<span class="st"> </span><span class="dv">100</span>)]
+<span class="kw">hist</span>(<span class="kw">width</span>(cheese.filtered), <span class="dt">breaks=</span><span class="dv">100</span>)</code></pre></div>
+<p><img src="RNAseq-analysis_files/figure-html/read-filtering-1.png" width="672" /></p>
+<div class="rmdexercise">
+<p>
+How many reads were removed from the filtering step? _________ (<strong>hint</strong> <code>length()</code>)
+</p>
+</div>
+<p>We have looked at the distribution of sequence lengths in the collection. We can also check the distribution of individual nucleotides in the collection. The <code>alphabetFrequency</code> function collects frequency counts for each of the IUPAC nucleotides in a <code>DNAStringSet</code> object. The method will generate a table that be summarised and plotted using your preferred graphics library.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">freq &lt;-<span class="st"> </span><span class="kw">alphabetFrequency</span>(<span class="kw">sread</span>(cheese.filtered))
+totalCount &lt;-<span class="st"> </span><span class="kw">colSums</span>(freq)
+<span class="kw">barplot</span>(totalCount[<span class="dv">1</span>:<span class="dv">4</span>])</code></pre></div>
+<p><img src="RNAseq-analysis_files/figure-html/read-baseFreq-1.png" width="672" /></p>
+<div class="rmdexercise">
+<ol style="list-style-type: decimal">
+<li>
+Run the command above.
+</li>
+<li>
+What <em>data type</em> is the variable <code>freq</code>? ________
+</li>
+<li>
+What are the dimensions of <code>freq</code>? ______________
+</li>
+<li>
+Why did we only plot the first 4 elements of <code>totalCount</code>? ________
+</li>
+</ol>
+</div>
+<p>Similar plots can be prepared for di- and trinucleotide frequencies, this looks at all possible words. You can similarly look for hexanucleotide frequencies or any other number, check the <code>alphabetFrequency()</code> documentation. This can assists in detecting any over-represented subsequences.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">barplot</span>(<span class="kw">colSums</span>(<span class="kw">dinucleotideFrequency</span>(<span class="kw">sread</span>(cheese.filtered))),<span class="dt">cex.axis =</span> <span class="fl">0.75</span>, <span class="dt">las=</span><span class="dv">2</span>)</code></pre></div>
+<p><img src="RNAseq-analysis_files/figure-html/read-dinucFreq-1.png" width="672" /></p>
+<p>Depending on the sequencing strategy that you applied, you may have ligated synthetic adapter sequences, primers and other constructs within the target amplicons. There are a number of methods for stripping such synthetic sequences from your sequence collection.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">head</span>(<span class="kw">sread</span>(cheese.filtered))</code></pre></div>
+<pre><code>##   A DNAStringSet instance of length 6
+##     width seq
+## [1]   173 AACATTTGTCCTAATCATTGGGGATACAGGG...TTTCTGCAAATCCTTTTTCTAAAAGATAGAG
+## [2]   201 AGAAAATAAAGAGAGAAAACAAACAAACAAA...GAAAGAAACAGAGAAGAAGAAAGAAAAAAAA
+## [3]   198 GGTGACCTTTTTTTTTTTTTTTTTTCAAGAA...AGACTTGGCAAACAGAAAAGGAGGGTATCAA
+## [4]   123 TTTTATTTGTTTTTTGATGCTATAGTAAATG...TTTCTATATGATGAGTTTAGCATTCTGCAAT
+## [5]   189 CACGACTGGATGCAGATCGCTGCAGAGACCA...CCTCAGGTGGCCTGGATCTTCGTGGCTGTGG
+## [6]   246 TTATAAAATGTAACTTGTAATTATACTGTAG...AAACTCTTGCATGAGAAGAGTTTTAGCACTG</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cloningPrimer &lt;-<span class="st"> &quot;AACATTTGTCCTAATCATTGGGGATA&quot;</span>
+cheese.clipped &lt;-<span class="st"> </span><span class="kw">trimLRPatterns</span>(<span class="dt">Lpattern =</span> cloningPrimer, <span class="dt">subject=</span>cheese.filtered,
+                                 <span class="dt">max.Lmismatch =</span> <span class="fl">0.33</span>)
+<span class="kw">head</span>(<span class="kw">sread</span>(cheese.clipped))</code></pre></div>
+<pre><code>##   A DNAStringSet instance of length 6
+##     width seq
+## [1]   147 CAGGGATTTGATAGATCATTTCCCTATCCTC...TTTCTGCAAATCCTTTTTCTAAAAGATAGAG
+## [2]   200 GAAAATAAAGAGAGAAAACAAACAAACAAAT...GAAAGAAACAGAGAAGAAGAAAGAAAAAAAA
+## [3]   198 GGTGACCTTTTTTTTTTTTTTTTTTCAAGAA...AGACTTGGCAAACAGAAAAGGAGGGTATCAA
+## [4]   123 TTTTATTTGTTTTTTGATGCTATAGTAAATG...TTTCTATATGATGAGTTTAGCATTCTGCAAT
+## [5]   189 CACGACTGGATGCAGATCGCTGCAGAGACCA...CCTCAGGTGGCCTGGATCTTCGTGGCTGTGG
+## [6]   246 TTATAAAATGTAACTTGTAATTATACTGTAG...AAACTCTTGCATGAGAAGAGTTTTAGCACTG</code></pre>
+<p>There is of course a lot more that can be done to allow for perfect, imperfect and truncated primer sequences or adapters at either the forward or reverse ends of the sequence.</p>
+<p>One of the reasons why the <code>fastq</code> file format has become so popular in genomics is that in addition to storing information relating to the DNA sequence, the file stores information on the DNA sequence and the quality (confidence score that the base has been measured correctly).</p>
+<p>The quality scores in a ShortRead data collection are accessible using the <code>quality()</code> function.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">head</span>(<span class="kw">quality</span>(cheese.clipped))</code></pre></div>
+<pre><code>## class: FastqQuality
+## quality:
+##   A BStringSet instance of length 6
+##     width seq
+## [1]   147 99@B:999-499?9999999049599=B=&gt;;...//*//////+4924444+44444,4444//6
+## [2]   200 A&gt;&gt;&gt;4999-999A9999/444-444049967...77&lt;6;&lt;;:;@@&lt;&gt;A:&lt;=B777.777777777
+## [3]   198 A@BA;;244499994444444444&quot;4424;@...6&gt;@AA@@&gt;79969;9@@@4&gt;&lt;999-7@?888
+## [4]   123 499+444-444444(4;9=@CB@==44408&gt;...8828==ACB&lt;;9&gt;&gt;99909@8-,*,,,//,4
+## [5]   189 ?@&gt;1//8&lt;1/9BCCBDDC@@ADCCDCDDD@D...;,4444844242442//88,/0443.3488,
+## [6]   246 4-44444,444989@=;;@;&gt;311&gt;&gt;&gt;CCCC...99198774773333339771111,1111116</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">encoding</span>(<span class="kw">quality</span>(cheese.clipped))</code></pre></div>
+<pre><code>##  !  &quot;  #  $  %  &amp;  &#39;  (  )  *  +  ,  -  .  /  0  1  2  3  4  5  6  7  8  9 
+##  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 
+##  :  ;  &lt;  =  &gt;  ?  @  A  B  C  D  E  F  G  H  I  J 
+## 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cheese.quality &lt;-<span class="st"> </span><span class="kw">as</span>(<span class="kw">quality</span>(cheese.clipped), <span class="st">&quot;matrix&quot;</span>)
+<span class="kw">hist</span>(<span class="kw">rowMeans</span>(cheese.quality[<span class="kw">sample</span>(<span class="kw">nrow</span>(cheese.quality), <span class="dv">25000</span>),],<span class="dt">na.rm=</span><span class="ot">TRUE</span>), 
+     <span class="dt">main=</span><span class="st">&quot;&quot;</span>, <span class="dt">xlab=</span><span class="st">&quot;&quot;</span>)</code></pre></div>
+<p><img src="RNAseq-analysis_files/figure-html/read-quality-compare-1.png" width="672" /></p>
+<div class="rmdexercise">
+<ol style="list-style-type: decimal">
+<li>
+Type in the commands above.
+</li>
+<li>
+What <em>data type</em> is the variable <code>cheese.quality</code>? ______________
+</li>
+<li>
+What is the dimension of <code>cheese.quality</code>? ______________________
+</li>
+<li>
+<p>
+How does the number of columns relate to the length of the reads? _____
+</p>
+</li>
+<li>
+<p>
+Below are the broken-down parts of the <code>hist(…)</code> function that produced the plot above. The list starts with the most inner function and works it’s way out. Can you describe what each inner function is doing and the expected result? The letter in the curly braces e.g. {a} means substitute the result from the part {a} into this function.
+</p>
+</li>
+</ol>
+<ol style="list-style-type: lower-alpha">
+<li>
+<code>nrow(cheese.quality)</code>: ______________________
+</li>
+<li>
+<code>sample({a}, 25000)</code> : ______________________
+</li>
+<li>
+<code>cheese.quality[{b},]</code> : _____________________
+</li>
+<li>
+<code>rowMeans({c}, na.rm=TRUE)</code>: _________________
+</li>
+<li>
+<code>hist({d}, main=“”, xlab=“”)</code>: _______________
+</li>
+</ol>
+</div>
+<p>The code above presents a text format (representation of the integer based quality scores) of the quality data. This is converted into a qualityMatrix that can then be plotted to show the distribution of quality scores across the sequence collection.</p>
+<p>Plotting the per-base quality scores is the goal of many software applications and this can be managed simply in R as well. One of the requirements to produce these plots is however, to reduce the dimensions of the data. Plotting the characteristics for every read is unnecessary since a sample should convey trends within the data.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">boxplot</span>(cheese.quality[<span class="kw">sample</span>(<span class="kw">nrow</span>(cheese.quality), <span class="dv">25000</span>), <span class="dv">1</span>:<span class="dv">100</span>],<span class="dt">out.cex=</span><span class="fl">0.5</span>)</code></pre></div>
+<p><img src="RNAseq-analysis_files/figure-html/read-boxplot-quality-1.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mung &lt;-<span class="st"> </span>function(i) {
+  lower &lt;-<span class="st"> </span>i
+  upper &lt;-<span class="st"> </span>i +<span class="st"> </span><span class="dv">4</span>
+  if (upper &gt;<span class="st"> </span><span class="kw">ncol</span>(cheese.quality)) {
+    upper &lt;-<span class="st"> </span><span class="kw">ncol</span>(cheese.quality)
+  }
+  <span class="kw">return</span>(<span class="kw">rowMeans</span>(cheese.quality[,<span class="kw">seq</span>(lower,upper)], <span class="dt">na.rm=</span><span class="ot">TRUE</span>))
+}
+
+sequence &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="dv">1</span>, <span class="kw">ncol</span>(cheese.quality), <span class="dv">5</span>)
+groupedQuality &lt;-<span class="st"> </span><span class="kw">as.data.frame</span>(<span class="kw">sapply</span>(sequence, mung))
+<span class="kw">colnames</span>(groupedQuality) &lt;-<span class="st"> </span><span class="kw">as.character</span>(sequence)
+
+<span class="kw">boxplot</span>(groupedQuality[<span class="kw">sample</span>(<span class="kw">nrow</span>(groupedQuality), <span class="dv">25000</span>),], <span class="dt">outcex=</span><span class="fl">0.5</span>)
+<span class="kw">abline</span>(<span class="dt">h=</span><span class="kw">c</span>(<span class="dv">20</span>,<span class="dv">28</span>),<span class="dt">lty=</span><span class="dv">2</span>,<span class="dt">col=</span><span class="st">&#39;white&#39;</span>)
+<span class="kw">rect</span>(-<span class="dv">5</span>,<span class="dv">28</span>,<span class="dv">358</span>,<span class="dv">45</span>,<span class="dt">col=</span><span class="kw">rgb</span>(<span class="fl">0.1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dt">alpha=</span><span class="fl">0.25</span>),<span class="dt">border=</span><span class="ot">NA</span>)
+<span class="kw">rect</span>(-<span class="dv">5</span>,<span class="dv">20</span>,<span class="dv">358</span>,<span class="dv">28</span>,<span class="dt">col=</span><span class="kw">rgb</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dt">alpha=</span><span class="fl">0.25</span>),<span class="dt">border=</span><span class="ot">NA</span>)
+<span class="kw">rect</span>(-<span class="dv">5</span>,<span class="dv">0</span>,<span class="dv">358</span>,<span class="dv">20</span>,<span class="dt">col=</span><span class="kw">rgb</span>(<span class="dv">1</span>,<span class="fl">0.6</span>,<span class="fl">0.6</span>,<span class="dt">alpha=</span><span class="fl">0.25</span>),<span class="dt">border=</span><span class="ot">NA</span>)</code></pre></div>
+<p><img src="RNAseq-analysis_files/figure-html/read-boxplot-quality2-1.png" width="672" /></p>
+<p>Having prepared this box-and-whisker plot we can see that the distribution of quality scores is generally OK but there are quite a large number of low quality bases described as the interquartile ranges within the whiskers. To make the data most valuable to the analysis it would be worthwhile to filter the sequences to exclude the substrings of lowest quality from the 3’-end forwards. The <code>ShortRead</code> package implements some easy to use functions such as <code>trimTails</code> and <code>trimTailw</code>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cheese.clipped &lt;-<span class="st"> </span><span class="kw">trimTailw</span>(cheese.clipped, <span class="dt">k=</span><span class="dv">4</span>, <span class="dt">a=</span><span class="st">&quot;4&quot;</span>, <span class="dt">halfwidth=</span><span class="dv">5</span>)
+cheese.quality &lt;-<span class="st"> </span><span class="kw">as</span>(<span class="kw">quality</span>(cheese.clipped), <span class="st">&quot;matrix&quot;</span>)
+<span class="kw">dim</span>(cheese.quality)</code></pre></div>
+<pre><code>## [1] 160256    284</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">sequence &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="dv">1</span>, <span class="kw">ncol</span>(cheese.quality), <span class="dv">5</span>)
+groupedQuality &lt;-<span class="st"> </span><span class="kw">as.data.frame</span>(<span class="kw">sapply</span>(sequence, mung))
+<span class="kw">colnames</span>(groupedQuality) &lt;-<span class="st"> </span><span class="kw">as.character</span>(sequence)
+<span class="kw">boxplot</span>(groupedQuality[<span class="kw">sample</span>(<span class="kw">nrow</span>(groupedQuality), <span class="dv">25000</span>),], <span class="dt">outcex=</span><span class="fl">0.5</span>)
+<span class="kw">abline</span>(<span class="dt">h=</span><span class="kw">c</span>(<span class="dv">20</span>,<span class="dv">28</span>),<span class="dt">lty=</span><span class="dv">2</span>,<span class="dt">col=</span><span class="st">&#39;white&#39;</span>)
+<span class="kw">rect</span>(-<span class="dv">5</span>,<span class="dv">28</span>,<span class="dv">358</span>,<span class="dv">45</span>,<span class="dt">col=</span><span class="kw">rgb</span>(<span class="fl">0.1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dt">alpha=</span><span class="fl">0.25</span>),<span class="dt">border=</span><span class="ot">NA</span>)
+<span class="kw">rect</span>(-<span class="dv">5</span>,<span class="dv">20</span>,<span class="dv">358</span>,<span class="dv">28</span>,<span class="dt">col=</span><span class="kw">rgb</span>(<span class="dv">1</span>,<span class="fl">0.8</span>,<span class="dv">0</span>,<span class="dt">alpha=</span><span class="fl">0.25</span>),<span class="dt">border=</span><span class="ot">NA</span>)
+<span class="kw">rect</span>(-<span class="dv">5</span>,<span class="dv">0</span>,<span class="dv">358</span>,<span class="dv">20</span>,<span class="dt">col=</span><span class="kw">rgb</span>(<span class="dv">1</span>,<span class="fl">0.6</span>,<span class="fl">0.6</span>,<span class="dt">alpha=</span><span class="fl">0.25</span>),<span class="dt">border=</span><span class="ot">NA</span>)</code></pre></div>
+<p><img src="RNAseq-analysis_files/figure-html/read-boxplot-quality3-1.png" width="672" /></p>
+<p>This shows that we have greatly improved the overall structure of the data and have removed a large number of the less-than-perfect bases. This example may have been a little more aggressive than we would really wish to apply in the laboratory setting.</p>
+<p>The <code>ShortRead</code> package has a well implemented framework for filtering sequences and it would be simple to implement other filters as required. The filter can be illustrated by filtering out the homopolymers from the sequence collection. These provide mechanisms for restricting the sequence collection on the basis of e.g. base composition, number of N-residues and even relative abundance.</p>
+<p>A whole lot more can be done using the <code>ShortRead</code> and <code>Biostrings</code> packages.</p>
+<div class="rmdexercise">
+<p>
+<strong>Prepare some QC information for an Illumina data collection</strong>
+</p>
+<p>
+Using the RNA-Seq reads that you will perform differential expression with, prepare a brief report of the data. Using the <code>qaSummary</code> function to prepare a synopsis of the library content and investigate the per-base quality scores across the sequence collection. Would you recommend that we re-run the analysis after some data trimming?
+</p>
+<p>
+Have a look at the over-represented k-mer words in the sequence collection and see if you can create a filter to strip-out the sequence that contain the most abundant k-mer.
+</p>
+</div>
+
+</div>
+<!-- </div> -->
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="reading-from-a-fasta-file.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="rnaseq-data-analysis.html" class="navigation navigation-next " aria-label="Next page""><i class="fa fa-angle-right"></i></a>
+
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script>
+require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"google": false,
+"weibo": false,
+"instapper": false,
+"vk": false,
+"all": ["facebook", "google", "twitter", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": "https://github.com/rstudio/bookdown-demo/edit/master/01-fastq.Rmd",
+"text": "Edit"
+},
+"download": ["RNAseq-analysis.pdf"],
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    if (location.protocol !== "file:" && /^https?:/.test(script.src))
+      script.src  = script.src.replace(/^https?:/, '');
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

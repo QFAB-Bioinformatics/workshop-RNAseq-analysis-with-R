@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html >
+
+<head>
+
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Differentially expressed gene analysis of RNA-seq data using R</title>
+  <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
+  <meta name="description" content="Differentially expressed gene analysis of RNA-seq data using R">
+  <meta name="generator" content="bookdown 0.3 and GitBook 2.6.7">
+
+  <meta property="og:title" content="Differentially expressed gene analysis of RNA-seq data using R" />
+  <meta property="og:type" content="book" />
+  
+  
+  
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Differentially expressed gene analysis of RNA-seq data using R" />
+  
+  
+  
+
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  
+  
+<link rel="prev" href="data-pre-processing.html">
+<link rel="next" href="quantification.html">
+
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #0000ff; } /* Keyword */
+code > span.ch { color: #008080; } /* Char */
+code > span.st { color: #008080; } /* String */
+code > span.co { color: #008000; } /* Comment */
+code > span.ot { color: #ff4000; } /* Other */
+code > span.al { color: #ff0000; } /* Alert */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #008000; font-weight: bold; } /* Warning */
+code > span.cn { } /* Constant */
+code > span.sc { color: #008080; } /* SpecialChar */
+code > span.vs { color: #008080; } /* VerbatimString */
+code > span.ss { color: #008080; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { } /* Variable */
+code > span.cf { color: #0000ff; } /* ControlFlow */
+code > span.op { } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #ff4000; } /* Preprocessor */
+code > span.do { color: #008000; } /* Documentation */
+code > span.an { color: #008000; } /* Annotation */
+code > span.cv { color: #008000; } /* CommentVar */
+code > span.at { } /* Attribute */
+code > span.in { color: #008000; } /* Information */
+</style>
+
+<link rel="stylesheet" href="css/style.css" type="text/css" />
+</head>
+
+<body>
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">A Minimal Book Example</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> NGS data exploration</a><ul>
+<li class="chapter" data-level="1.1" data-path="required-packages-for-these-exercises.html"><a href="required-packages-for-these-exercises.html"><i class="fa fa-check"></i><b>1.1</b> Required packages for these exercises</a></li>
+<li class="chapter" data-level="1.2" data-path="reading-from-a-fasta-file.html"><a href="reading-from-a-fasta-file.html"><i class="fa fa-check"></i><b>1.2</b> Reading from a fasta file</a></li>
+<li class="chapter" data-level="1.3" data-path="parsing-fastq-files.html"><a href="parsing-fastq-files.html"><i class="fa fa-check"></i><b>1.3</b> Parsing FastQ files</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="rnaseq-data-analysis.html"><a href="rnaseq-data-analysis.html"><i class="fa fa-check"></i><b>2</b> RNAseq data analysis</a><ul>
+<li class="chapter" data-level="2.1" data-path="data-pre-processing.html"><a href="data-pre-processing.html"><i class="fa fa-check"></i><b>2.1</b> Data pre-processing</a></li>
+<li class="chapter" data-level="2.2" data-path="mapping.html"><a href="mapping.html"><i class="fa fa-check"></i><b>2.2</b> Mapping</a><ul>
+<li class="chapter" data-level="2.2.1" data-path="mapping.html"><a href="mapping.html#examining-the-mapped-reads"><i class="fa fa-check"></i><b>2.2.1</b> Examining the mapped reads</a></li>
+</ul></li>
+<li class="chapter" data-level="2.3" data-path="quantification.html"><a href="quantification.html"><i class="fa fa-check"></i><b>2.3</b> Quantification</a></li>
+<li class="chapter" data-level="2.4" data-path="exploratory-analysis.html"><a href="exploratory-analysis.html"><i class="fa fa-check"></i><b>2.4</b> Exploratory analysis</a></li>
+<li class="chapter" data-level="2.5" data-path="understanding-the-dataset.html"><a href="understanding-the-dataset.html"><i class="fa fa-check"></i><b>2.5</b> Understanding the dataset</a></li>
+<li class="chapter" data-level="2.6" data-path="prefiltering.html"><a href="prefiltering.html"><i class="fa fa-check"></i><b>2.6</b> Prefiltering</a></li>
+<li class="chapter" data-level="2.7" data-path="normalisation.html"><a href="normalisation.html"><i class="fa fa-check"></i><b>2.7</b> Normalisation</a><ul>
+<li class="chapter" data-level="2.7.1" data-path="normalisation.html"><a href="normalisation.html#defining-the-model-matrix"><i class="fa fa-check"></i><b>2.7.1</b> Defining the model matrix</a></li>
+<li class="chapter" data-level="2.7.2" data-path="normalisation.html"><a href="normalisation.html#ma-plots"><i class="fa fa-check"></i><b>2.7.2</b> MA-plots</a></li>
+</ul></li>
+<li class="chapter" data-level="2.8" data-path="using-visualisation-to-verify-sanity-checks.html"><a href="using-visualisation-to-verify-sanity-checks.html"><i class="fa fa-check"></i><b>2.8</b> Using visualisation to verify (sanity checks)</a><ul>
+<li class="chapter" data-level="2.8.1" data-path="using-visualisation-to-verify-sanity-checks.html"><a href="using-visualisation-to-verify-sanity-checks.html#principal-component-analysis-pca"><i class="fa fa-check"></i><b>2.8.1</b> Principal Component Analysis (PCA)</a></li>
+</ul></li>
+<li class="chapter" data-level="2.9" data-path="differential-expression-analysis.html"><a href="differential-expression-analysis.html"><i class="fa fa-check"></i><b>2.9</b> Differential expression analysis</a><ul>
+<li class="chapter" data-level="2.9.1" data-path="differential-expression-analysis.html"><a href="differential-expression-analysis.html#fitting-the-model"><i class="fa fa-check"></i><b>2.9.1</b> Fitting the model</a></li>
+<li class="chapter" data-level="2.9.2" data-path="differential-expression-analysis.html"><a href="differential-expression-analysis.html#comparisons"><i class="fa fa-check"></i><b>2.9.2</b> Comparisons</a></li>
+<li class="chapter" data-level="2.9.3" data-path="differential-expression-analysis.html"><a href="differential-expression-analysis.html#extract-top-de-features"><i class="fa fa-check"></i><b>2.9.3</b> Extract top DE features</a></li>
+</ul></li>
+<li class="chapter" data-level="2.10" data-path="verification-using-visualisation.html"><a href="verification-using-visualisation.html"><i class="fa fa-check"></i><b>2.10</b> Verification using visualisation</a><ul>
+<li class="chapter" data-level="2.10.1" data-path="verification-using-visualisation.html"><a href="verification-using-visualisation.html#hierachical-clustering"><i class="fa fa-check"></i><b>2.10.1</b> Hierachical clustering</a></li>
+</ul></li>
+<li class="chapter" data-level="2.11" data-path="gene-annotation.html"><a href="gene-annotation.html"><i class="fa fa-check"></i><b>2.11</b> Gene Annotation</a></li>
+<li class="chapter" data-level="2.12" data-path="gene-set-enrichment.html"><a href="gene-set-enrichment.html"><i class="fa fa-check"></i><b>2.12</b> Gene set enrichment</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Differentially expressed gene analysis of RNA-seq data using R</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="mapping" class="section level2">
+<h2><span class="header-section-number">2.2</span> Mapping</h2>
+<p>Once the reads have been quality checked and trimmed, the next step is to map the reads to the reference genome (in our case the human genome “hg19”). This can be done with the Bioconductor package <code>Rsubread</code> .</p>
+<p>Before mapping the reads to the reference genome you will need to build a Rsubread index for that genome. Below are the commands for building an index for the human reference genome using the <code>buildindex</code> command.</p>
+<div class="rmdwarning">
+<p>
+<strong>PLEASE DO NOT RUN</strong> the <code>buildindex()</code> code in the workshop as this can take awhile. We have already build the index for you.
+</p>
+</div>
+
+<div class="rmdtip">
+<code>library(Rsubread)</code><br />
+<code>buildindex(basename=file.path(RSUBREAD_INDEX_BASE, RSUBREAD_INDEX_PATH),            reference=REF_GENOME)</code>
+</div>
+<p></p>
+<p>Once the Rsubread index has been created you can map your reads to the genome by running the <code>align</code> command. The code below could be used to map the reads for a specific library against the “hg19” genome.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(Rsubread)
+sample &lt;-<span class="st"> &quot;ERR420386&quot;</span>
+
+inputFileFWD &lt;-<span class="st"> </span><span class="kw">file.path</span>(RNASeq_DATA_DIR, <span class="kw">paste0</span>(sample,<span class="st">&quot;_chr21_R1.fastq.gz&quot;</span>))
+inputFileRVS &lt;-<span class="st"> </span><span class="kw">file.path</span>(RNASeq_DATA_DIR, <span class="kw">paste0</span>(sample,<span class="st">&quot;_chr21_R2.fastq.gz&quot;</span>))
+
+output.bamFile &lt;-<span class="st"> </span><span class="kw">file.path</span>(MAPPING_DIR, <span class="kw">paste0</span>(sample,<span class="st">&quot;.bam&quot;</span>))
+
+inputFileFWD
+inputFileRVS
+output.bamFile</code></pre></div>
+<pre><code>## [1] &quot;../data/RNAseq/raw_data/ERR420386_chr21_R1.fastq.gz&quot;
+## [1] &quot;../data/RNAseq/raw_data/ERR420386_chr21_R2.fastq.gz&quot;
+## [1] &quot;results/RNAseq/mapping/ERR420386.bam&quot;</code></pre>
+<div class="rmdwarning">
+<p>
+For the purpose of this workshop the mapping has already been done. This step can take up to a couple of hours per library.
+</p>
+<p>
+<strong>Please only run the following command using the subset sample <code>*_chr21_R1.fastq.gz</code>, which is much smaller.</strong>
+</p>
+</div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">align</span>(<span class="dt">index =</span> <span class="kw">file.path</span>(RSUBREAD_INDEX_PATH, RSUBREAD_INDEX_BASE),
+     <span class="dt">readfile1 =</span> inputFileFWD, 
+     <span class="dt">readfile2 =</span> inputFileRVS,
+     <span class="dt">input_format =</span> <span class="st">&quot;gzFASTQ&quot;</span>,
+     <span class="dt">output_file =</span> output.bamFile,
+     <span class="dt">output_format =</span> <span class="st">&quot;BAM&quot;</span>)</code></pre></div>
+<pre><code>## 
+##         ==========     _____ _    _ ____  _____  ______          _____  
+##         =====         / ____| |  | |  _ \|  __ \|  ____|   /\   |  __ \ 
+##           =====      | (___ | |  | | |_) | |__) | |__     /  \  | |  | |
+##             ====      \___ \| |  | |  _ &lt;|  _  /|  __|   / /\ \ | |  | |
+##               ====    ____) | |__| | |_) | | \ \| |____ / ____ \| |__| |
+##         ==========   |_____/ \____/|____/|_|  \_\______/_/    \_\_____/
+##        Rsubread 1.24.2
+## 
+## //========================== subread-align setting ===========================\\
+## ||                                                                            ||
+## || Function      : Read alignment (RNA-Seq)                                   ||
+## || Input file 1  : ../data/RNAseq/raw_data/ERR420386_chr21_R1.fastq.gz        ||
+## || Input file 2  : ../data/RNAseq/raw_data/ERR420386_chr21_R2.fastq.gz        ||
+## || Output file   : results/RNAseq/mapping/ERR420386.bam (BAM)                 ||
+## || Index name    : ../data/RNAseq/ref_data/RsubreadIndex/hg19                 ||
+## ||                                                                            ||
+## ||                    ------------------------------------                    ||
+## ||                                                                            ||
+## ||                       Threads : 1                                          ||
+## ||                  Phred offset : 33                                         ||
+## ||       # of extracted subreads : 10                                         ||
+## ||                Min read1 vote : 3                                          ||
+## ||                Min read2 vote : 1                                          ||
+## ||             Max fragment size : 600                                        ||
+## ||             Min fragment size : 50                                         ||
+## ||    Maximum allowed mismatches : 3                                          ||
+## ||   Maximum allowed indel bases : 5                                          ||
+## || # of best alignments reported : 1                                          ||
+## ||                Unique mapping : yes                                        ||
+## ||                                                                            ||
+## \\===================== http://subread.sourceforge.net/ ======================//
+## 
+## //================ Running (12-Apr-2017 20:38:48, pid=31533) =================\\
+## ||                                                                            ||
+## || The input file contains base space reads.                                  ||
+## || The range of Phred scores observed in the data is [2,40]                   ||
+## || Load the 1-th index block...                                               ||
+## ||    4% completed, 0.2 mins elapsed, rate=4.1k fragments per second          ||
+## ||   10% completed, 0.2 mins elapsed, rate=4.1k fragments per second          ||
+## ||   17% completed, 0.3 mins elapsed, rate=4.1k fragments per second          ||
+## ||   24% completed, 0.3 mins elapsed, rate=4.1k fragments per second          ||
+## ||   30% completed, 0.4 mins elapsed, rate=4.1k fragments per second          ||
+## ||   37% completed, 0.4 mins elapsed, rate=4.1k fragments per second          ||
+## ||   44% completed, 0.5 mins elapsed, rate=4.0k fragments per second          ||
+## ||   50% completed, 0.5 mins elapsed, rate=4.0k fragments per second          ||
+## ||   57% completed, 0.5 mins elapsed, rate=4.0k fragments per second          ||
+## ||   64% completed, 0.6 mins elapsed, rate=4.0k fragments per second          ||
+## ||   69% completed, 0.6 mins elapsed, rate=3.0k fragments per second          ||
+## ||   73% completed, 0.6 mins elapsed, rate=3.1k fragments per second          ||
+## ||   76% completed, 0.7 mins elapsed, rate=3.2k fragments per second          ||
+## ||   80% completed, 0.7 mins elapsed, rate=3.2k fragments per second          ||
+## ||   83% completed, 0.7 mins elapsed, rate=3.3k fragments per second          ||
+## ||   86% completed, 0.7 mins elapsed, rate=3.4k fragments per second          ||
+## ||   90% completed, 0.7 mins elapsed, rate=3.5k fragments per second          ||
+## ||   93% completed, 0.7 mins elapsed, rate=3.5k fragments per second          ||
+## ||   96% completed, 0.7 mins elapsed, rate=3.6k fragments per second          ||
+## ||                                                                            ||
+## ||                          Completed successfully.                           ||
+## ||                                                                            ||
+## \\============================================================================//
+## 
+## //================================= Summary ==================================\\
+## ||                                                                            ||
+## ||          Processed : 161,297 fragments                                     ||
+## ||             Mapped : 160,518 fragments (99.5%)                             ||
+## ||   Correctly paired : 126,376 fragments                                     ||
+## ||             Indels : 2,635                                                 ||
+## ||                                                                            ||
+## ||       Running time : 0.7 minutes                                           ||
+## ||                                                                            ||
+## \\===================== http://subread.sourceforge.net/ ======================//</code></pre>
+<div class="rmdtip">
+<p>
+The <code>nthreads</code> parameter can be used in the align command to speed up the process and run the alignment using several CPUs in parallel.
+</p>
+</div>
+<p>The function <code>propmapped</code> returns the proportion of mapped reads in the output SAM file: total number of input reads, number of mapped reads and proportion of mapped reads.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">propmapped</span>(output.bamFile)</code></pre></div>
+<pre><code>## The input file is opened as a BAM file.
+## The fragments in the input file are being counted.
+## Finished. All records: 322594; all fragments: 161297; mapped fragments: 160518; the mappability is 99.52%</code></pre>
+<pre><code>##                                Samples NumTotal NumMapped PropMapped
+## 1 results/RNAseq/mapping/ERR420386.bam   161297    160518    0.99517</code></pre>
+<div class="rmdtip">
+<p>
+You can run the <code>propmapped()</code> on multiple <code>bam</code> files to return a summary of the total number of reads per file and the number of reads that were mappable or unmappable. <strong>However</strong>, this can take a very long time to run for big bam files.
+</p>
+<p>
+<strong>PLEASE DO NOT RUN</strong>
+</p>
+<p>
+For example:<br /> <code>all.bam.files &lt;- grep(‘.bam’,dir(‘../data/RNAseq/mapping’,full.names = T),value=T)</code><br /> <code>pm &lt;- propmapped(all.bam.files)</code>
+</p>
+</div>
+<div id="examining-the-mapped-reads" class="section level3">
+<h3><span class="header-section-number">2.2.1</span> Examining the mapped reads</h3>
+<p>Create a <code>BamFile</code> object and load the file into memory so we can interact with it and find out some information. The <code>seqinfo()</code> function outputs the headding information, in this exercise, this is the</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(Rsamtools)
+bf &lt;-<span class="st"> </span><span class="kw">BamFile</span>(output.bamFile)
+<span class="kw">seqinfo</span>(bf)</code></pre></div>
+<pre><code>## Seqinfo object with 25 sequences from an unspecified genome:
+##   seqnames seqlengths isCircular genome
+##   chrM          16571       &lt;NA&gt;   &lt;NA&gt;
+##   chr1      249250621       &lt;NA&gt;   &lt;NA&gt;
+##   chr2      243199373       &lt;NA&gt;   &lt;NA&gt;
+##   chr3      198022430       &lt;NA&gt;   &lt;NA&gt;
+##   chr4      191154276       &lt;NA&gt;   &lt;NA&gt;
+##   ...             ...        ...    ...
+##   chr20      63025520       &lt;NA&gt;   &lt;NA&gt;
+##   chr21      48129895       &lt;NA&gt;   &lt;NA&gt;
+##   chr22      51304566       &lt;NA&gt;   &lt;NA&gt;
+##   chrX      155270560       &lt;NA&gt;   &lt;NA&gt;
+##   chrY       59373566       &lt;NA&gt;   &lt;NA&gt;</code></pre>
+<p>We can take a closer look and find out how many of the reads map to each chromosome. To do this, we need to first sort and index the <code>bam</code> file.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">output.sorted.bamFile &lt;-<span class="st"> </span><span class="kw">file.path</span>(MAPPING_DIR,<span class="kw">paste0</span>(sample, <span class="st">&#39;.sorted&#39;</span>))
+<span class="kw">sortBam</span>(output.bamFile, output.sorted.bamFile)</code></pre></div>
+<pre><code>## [1] &quot;results/RNAseq/mapping/ERR420386.sorted.bam&quot;</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">output.sorted.bamFile &lt;-<span class="st"> </span><span class="kw">paste0</span>(output.sorted.bamFile, <span class="st">&quot;.bam&quot;</span>)
+<span class="kw">indexBam</span>(output.sorted.bamFile)</code></pre></div>
+<pre><code>##       results/RNAseq/mapping/ERR420386.sorted.bam 
+## &quot;results/RNAseq/mapping/ERR420386.sorted.bam.bai&quot;</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">dir</span>(MAPPING_DIR, <span class="dt">full.names=</span>T)</code></pre></div>
+<pre><code>## [1] &quot;results/RNAseq/mapping/ERR420386.bam&quot;           
+## [2] &quot;results/RNAseq/mapping/ERR420386.bam.indel&quot;     
+## [3] &quot;results/RNAseq/mapping/ERR420386.sorted.bam&quot;    
+## [4] &quot;results/RNAseq/mapping/ERR420386.sorted.bam.bai&quot;</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">output.bam.index &lt;-<span class="st"> </span><span class="kw">dir</span>(MAPPING_DIR, <span class="dt">full.names=</span>T)[<span class="kw">grep</span>(<span class="st">&quot;.bai&quot;</span>,<span class="kw">dir</span>(MAPPING_DIR))]
+output.bam.index</code></pre></div>
+<pre><code>## [1] &quot;results/RNAseq/mapping/ERR420386.sorted.bam.bai&quot;</code></pre>
+<p>Once the index bam file has been created, we can find out the number of mapped reads per chromosome:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">chr.mapping.stats &lt;-<span class="st"> </span><span class="kw">idxstatsBam</span>(output.bamFile, <span class="dt">index=</span>output.bam.index)
+chr.mapping.stats</code></pre></div>
+<pre><code>##    seqnames seqlength mapped unmapped
+## 1      chr1 249250621    150        0
+## 2      chr2 243199373    559        0
+## 3      chr3 198022430     20        0
+## 4      chr4 191154276     79        0
+## 5      chr5 180915260    892        0
+## 6      chr6 171115067    200        0
+## 7      chr7 159138663    850        0
+## 8      chr8 146364022      7        0
+## 9      chr9 141213431    101        0
+## 10    chr10 135534747     10        0
+## 11    chr11 135006516    212        0
+## 12    chr12 133851895    155        0
+## 13    chr13 115169878     42        0
+## 14    chr14 107349540     19        0
+## 15    chr15 102531392     56        0
+## 16    chr16  90354753    924        0
+## 17    chr17  81195210      6        0
+## 18    chr18  78077248     27        0
+## 19    chr19  59128983     24        0
+## 20    chr20  63025520     20        0
+## 21    chr21  48129895 314047        0
+## 22    chr22  51304566     15        0
+## 23     chrX 155270560     46        0
+## 24     chrY  59373566     66        0
+## 25     chrM     16571      0        0</code></pre>
+<p>This is easiest to view as a plot:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">rownames</span>(chr.mapping.stats) &lt;-<span class="st"> </span>chr.mapping.stats$seqnames
+<span class="kw">barplot</span>(chr.mapping.stats$mapped, 
+        <span class="dt">names.arg=</span><span class="kw">as.character</span>(chr.mapping.stats$seqnames))</code></pre></div>
+<p><img src="RNAseq-analysis_files/figure-html/mapping-barplot-1.png" width="672" /></p>
+<div class="rmdexercise">
+<p>
+<strong>Mapping percentage</strong>
+</p>
+<p>
+Using a barplot, can you find out which other chromsome has the highest number of mapped reads?
+</p>
+<p>
+Hint: repeat the barplot but without the bar for <code>chr21</code>.
+</p>
+</div>
+<p><img src="RNAseq-analysis_files/figure-html/mapping-barplot-proportion-1.png" width="672" /></p>
+<div class="rmdsolution">
+<p>
+<strong>Solution</strong>
+</p>
+<p>
+<code>total.mapped.reads &lt;- sum(chr.mapping.stats<span class="math inline">\(mapped)&lt;/code&gt;&lt;br /&gt; &lt;code&gt;chr.mapping.stats\)</span>mapped.prop &lt;- chr.mapping.stats<span class="math inline">\(mapped/total.mapped.reads*100&lt;/code&gt;&lt;br /&gt; &lt;code&gt;barplot(chr.mapping.stats\)</span>mapped.prop[-21],</code><br /> <code>names.arg=chr.mapping.stats$seqnames[-21],</code><br /> <code>las=2, col=‘slateblue’, ylim=c(0,1))</code>
+</p>
+</div>
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="data-pre-processing.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="quantification.html" class="navigation navigation-next " aria-label="Next page""><i class="fa fa-angle-right"></i></a>
+
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script>
+require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"google": false,
+"weibo": false,
+"instapper": false,
+"vk": false,
+"all": ["facebook", "google", "twitter", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": "https://github.com/rstudio/bookdown-demo/edit/master/03-mapping.Rmd",
+"text": "Edit"
+},
+"download": ["RNAseq-analysis.pdf"],
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    if (location.protocol !== "file:" && /^https?:/.test(script.src))
+      script.src  = script.src.replace(/^https?:/, '');
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>
